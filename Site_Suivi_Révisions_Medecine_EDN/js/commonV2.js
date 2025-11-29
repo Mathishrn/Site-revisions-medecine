@@ -609,3 +609,26 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  const btnNews = document.getElementById("btn-news");
+  const modalNews = document.getElementById("news-modal");
+  const btnCloseNews = document.getElementById("news-close");
+  const backdropNews = document.getElementById("news-backdrop");
+
+  if (!btnNews || !modalNews) return;
+
+  function openNews() {
+    modalNews.classList.add("open");
+    modalNews.setAttribute("aria-hidden", "false");
+  }
+
+  function closeNews() {
+    modalNews.classList.remove("open");
+    modalNews.setAttribute("aria-hidden", "true");
+  }
+
+  btnNews.addEventListener("click", openNews);
+  if (btnCloseNews) btnCloseNews.addEventListener("click", closeNews);
+  if (backdropNews) backdropNews.addEventListener("click", closeNews);
+});

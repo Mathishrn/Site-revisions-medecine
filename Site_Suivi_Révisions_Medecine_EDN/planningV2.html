@@ -56,6 +56,7 @@
     <div class="header-top">
       <h1>📆 Planning de re-révisions</h1>
       <button id="btn-theme-toggle" class="theme-toggle-btn" title="Mode sombre">🌙</button>
+      <button id="btn-news" class="theme-toggle-btn" title="Nouveautés & Mises à jour">🔔</button>
       <nav class="main-nav">
         <a href="index.html" class="nav-link">Suivi général</a>
         <a href="planningV2.html" class="nav-link active">Planning de re-révisions</a>
@@ -191,5 +192,44 @@
   <script src="js/dataV2.js"></script>
   <script src="js/commonV2.js"></script>
   <script src="js/planningV2.js"></script>
+
+  <!-- MODAL NOUVEAUTÉS -->
+<div id="news-modal" class="modal" aria-hidden="true">
+  <div class="modal-backdrop" id="news-backdrop"></div>
+  <div class="modal-content news-content">
+    <button class="modal-close" id="news-close">✖</button>
+    
+    <h3>🚀 Quoi de neuf ?</h3>
+    <p class="modal-desc">Les dernières améliorations du site.</p>
+
+    <div class="changelog-list">
+      
+      <!-- C'EST ICI QUE TU AJOUTES TES PROCHAINES MISES A JOUR -->
+      <!-- Copie ce bloc "changelog-item" pour en ajouter une nouvelle en haut -->
+      
+      <div class="changelog-item">
+        <div class="changelog-date">29 Novembre 2025</div>
+        <h4 class="changelog-version">Version 2.0 - Lancement Officiel 🎉</h4>
+        <ul class="changelog-details">
+          <li>✨ <strong>Nouveau Design :</strong> Interface plus claire et Mode Sombre 🌙.</li>
+          <li>📊 <strong>Stats Expert :</strong> Ajout des graphiques d'activité, dette de retard et podiums.</li>
+          <li>💾 <strong>Sauvegarde :</strong> Choix de l'emplacement du fichier.</li>
+          <li>📢 <strong>Feedback :</strong> Un bouton pour signaler les bugs facilement.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-item">
+        <div class="changelog-date">15 Novembre 2025</div>
+        <h4 class="changelog-version">Version 1.5 - Planning</h4>
+        <ul class="changelog-details">
+          <li>Ajout du planning mensuel et hebdomadaire.</li>
+          <li>Correction du bug des dates décalées.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

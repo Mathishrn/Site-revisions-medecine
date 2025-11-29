@@ -1613,3 +1613,83 @@ body.dark-mode .form-group textarea {
   border-color: #444;
   color: #fff;
 }
+
+
+/* ... Code existant ... */
+
+/* --- CHANGELOG (NOUVEAUTÉS) --- */
+
+.news-content {
+  max-width: 500px;
+}
+
+.changelog-list {
+  margin-top: 20px;
+  max-height: 60vh;
+  overflow-y: auto; /* Scroll si la liste est longue */
+  padding-right: 10px;
+}
+
+.changelog-item {
+  position: relative;
+  padding-left: 20px;
+  border-left: 3px solid #eee; /* La ligne verticale */
+  padding-bottom: 24px;
+}
+
+.changelog-item:last-child {
+  border-left-color: transparent;
+}
+
+/* La petite boule sur la ligne */
+.changelog-item::before {
+  content: "";
+  position: absolute;
+  left: -8px; 
+  top: 0;
+  width: 13px;
+  height: 13px;
+  background: #2f7e5f;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+.changelog-date {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.changelog-version {
+  font-size: 16px;
+  margin-bottom: 8px;
+  color: #2f7e5f;
+}
+
+.changelog-details {
+  padding-left: 16px;
+  margin: 0;
+  font-size: 14px;
+  color: #444;
+  line-height: 1.5;
+}
+
+.changelog-details li {
+  margin-bottom: 4px;
+}
+
+/* Dark Mode pour le changelog */
+body.dark-mode .changelog-item {
+  border-left-color: #333;
+}
+body.dark-mode .changelog-item::before {
+  border-color: #1e1e1e;
+}
+body.dark-mode .changelog-details {
+  color: #ddd;
+}
+body.dark-mode .changelog-version {
+  color: #4db6ac;
+}
