@@ -1484,6 +1484,27 @@ body.dark-mode .podium-fill {
   opacity: 0.3;
 }
 
+
+.theme-toggle-btn2 {
+  background: rgba(0,0,0,0.2);
+  border: none;
+  cursor: pointer;
+  font-size: 25px;
+  padding: 6px 10px;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  margin-left: 0;
+  color: #fff;
+  /* CENTRAGE ABSOLU SUR LE HEADER */
+  position: absolute;
+  left: 84%;
+  top: 180%;
+  transform: translate(-10%, -10%);
+}
+.theme-toggle-btn2:hover {
+  background: rgba(255,255,255,0.1);
+  transform: rotate(5deg) translate(-15%, -15%);
+}
 /* Bouton Dark Mode */
 .theme-toggle-btn {
   background: rgba(0,0,0,0.2);
@@ -1503,7 +1524,7 @@ body.dark-mode .podium-fill {
 }
 .theme-toggle-btn:hover {
   background: rgba(255,255,255,0.1);
-  transform: rotate(15deg) translate(-50%, -50%);
+  transform: rotate(5deg) translate(-50%, -50%);
 }
 
 /* Ajustement pour le centrage absolu */
