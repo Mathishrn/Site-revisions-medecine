@@ -540,3 +540,66 @@ function initDarkMode() {
 document.addEventListener("DOMContentLoaded", () => {
   initDarkMode();
 });
+
+
+// --- GESTION DU FEEDBACK ---
+
+document.addEventListener("DOMContentLoaded", () => {
+  const btnOpen = document.getElementById("btn-open-feedback");
+  const modalFB = document.getElementById("feedback-modal");
+  const btnClose = document.getElementById("feedback-close");
+  const backdrop = document.getElementById("feedback-backdrop");
+  const form = document.getElementById("feedback-form");
+
+  if (!btnOpen || !modalFB) return;
+
+  // Ouvrir
+  btnOpen.addEventListener("click", () => {
+    modalFB.classList.add("open");
+    modalFB.setAttribute("aria-hidden", "false");
+  });
+
+  // Fermer
+  function closeFeedback() {
+    modalFB.classList.remove("open");
+    modalFB.setAttribute("aria-hidden", "true");
+  }
+
+  if (btnClose) btnClose.addEventListener("click", closeFeedback);
+  if (backdrop) backdrop.addEventListener("click", closeFeedback);
+
+  // Soumission du formulaire en AJAX (sans recharger la page)
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault(); // Empêche le rechargement
+
+      const submitBtn = form.querySelector(".submit-btn");
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = "Envoi en cours...";
+      submitBtn.disabled = true;
+
+      const formData = new FormData(form);
+
+      fetch("/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        // Astuce Netlify: il faut convertir le FormData pour qu'il passe
+        // sauf si fichier, mais avec fetch simple et Netlify, cette méthode est robuste
+        body: new URLSearchParams(formData).toString(),
+      })
+      .then(() => {
+        closeFeedback();
+        showToast("Message envoyé ! Merci pour ton retour 💌");
+        form.reset();
+      })
+      .catch((error) => {
+        console.error(error);
+        alert("Oups, erreur lors de l'envoi. Tu peux réessayer ?");
+      })
+      .finally(() => {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      });
+    });
+  }
+});

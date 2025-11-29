@@ -1523,3 +1523,93 @@ body.dark-mode .podium-fill {
     transform: rotate(15deg);
   }
 }
+
+
+/* --- FEEDBACK WIDGET --- */
+
+/* Bouton flottant en bas à droite */
+.feedback-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #2f7e5f;
+  color: #fff;
+  border: none;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  cursor: pointer;
+  z-index: 1900; /* Au-dessus de presque tout */
+  transition: transform 0.2s, background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.feedback-btn:hover {
+  transform: scale(1.1);
+  background: #25664d;
+}
+
+/* Style spécifique du modal feedback */
+.feedback-content {
+  max-width: 450px; /* Un peu plus étroit que les autres */
+}
+
+/* Formulaire */
+.form-group {
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #444;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.form-group input[type="file"] {
+  font-size: 13px;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 10px;
+  background: #2f7e5f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.submit-btn:hover {
+  background: #25664d;
+}
+
+/* Dark mode support pour le formulaire */
+body.dark-mode .form-group label {
+  color: #ddd;
+}
+body.dark-mode .form-group input,
+body.dark-mode .form-group textarea {
+  background: #2c2c2c;
+  border-color: #444;
+  color: #fff;
+}

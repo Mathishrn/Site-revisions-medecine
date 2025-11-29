@@ -7,6 +7,50 @@
   <link rel="stylesheet" href="css/styleV2.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
+<!-- BOUTON FLOTTANT FEEDBACK -->
+<button id="btn-open-feedback" class="feedback-btn" title="Donner un avis / Signaler un bug">📢</button>
+
+<!-- MODAL FEEDBACK -->
+<div id="feedback-modal" class="modal" aria-hidden="true">
+  <div class="modal-backdrop" id="feedback-backdrop"></div>
+  <div class="modal-content feedback-content">
+    <button class="modal-close" id="feedback-close">✖</button>
+    
+    <h3>📢 Une idée ? Un bug ?</h3>
+    <p class="modal-desc">Dis-moi tout ! Ton message arrivera directement dans ma boîte mail.</p>
+
+    <!-- FORMULAIRE NETLIFY -->
+    <!-- L'attribut name="feedback" est important pour Netlify -->
+    <form id="feedback-form" name="feedback" method="POST" data-netlify="true" enctype="multipart/form-data">
+      <!-- Champ caché obligatoire pour Netlify -->
+      <input type="hidden" name="form-name" value="feedback">
+
+      <div class="form-group">
+        <label for="fb-name">Ton nom :</label>
+        <input type="text" id="fb-name" name="name" placeholder="Ex: Marie" required>
+      </div>
+
+      <div class="form-group">
+        <label for="fb-email">Ton email (pour te répondre) :</label>
+        <input type="email" id="fb-email" name="email" placeholder="marie@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="fb-message">Message :</label>
+        <textarea id="fb-message" name="message" rows="4" placeholder="J'ai trouvé un bug quand..." required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="fb-file">Pièce jointe (facultatif) :</label>
+        <input type="file" id="fb-file" name="attachment" accept="image/png, image/jpeg, .pdf">
+      </div>
+
+      <button type="submit" class="submit-btn">Envoyer 🚀</button>
+    </form>
+  </div>
+</div>
+
 <body>
   <header class="header">
     <div class="header-top">
