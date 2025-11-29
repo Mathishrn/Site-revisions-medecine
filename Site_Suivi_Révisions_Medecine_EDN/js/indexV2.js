@@ -431,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  btnSave.addEventListener("click", () => {
+btnSave.addEventListener("click", async () => { // Note l'ajout de "async" ici
     const data = {
       version: 1,
       date: new Date().toISOString(),
@@ -439,11 +439,41 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
+    const filename = "progression_medecine_" + todayISO() + ".json";
 
+    // 1. Essayer la nouvelle méthode "Enregistrer sous" (Chrome, Edge, Opera)
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{
+            description: 'Fichier de progression JSON',
+            accept: { 'application/json': ['.json'] },
+          }],
+        });
+        
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        
+        // Si ça marche, on s'arrête là
+        return; 
+      } catch (err) {
+        // Si l'utilisateur clique sur "Annuler", on ne fait rien (c'est normal)
+        if (err.name === 'AbortError') {
+          return; 
+        }
+        // Sinon, on continue vers la méthode classique en cas d'erreur technique
+        console.warn("L'API File System a échoué, passage à la méthode classique.");
+      }
+    }
+
+    // 2. Méthode classique (Fallback pour Firefox, Safari, Mobile)
+    // Cela téléchargera directement dans "Downloads" selon les réglages du navigateur
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "progression_medecine_" + todayISO() + ".json";
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -511,4 +541,5 @@ document.addEventListener("DOMContentLoaded", () => {
   construireListe();
   majProgression();
   applyFilters();
+
 });
