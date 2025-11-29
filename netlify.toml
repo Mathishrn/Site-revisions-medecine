@@ -1,0 +1,5 @@
+[build]
+  # No build command needed - this is a static HTML/CSS/JS site
+  command = ""
+  # The static files are in this subdirectory
+  publish = "Site_Suivi_Révisions_Medecine_EDN"
