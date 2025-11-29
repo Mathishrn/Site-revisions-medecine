@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Suivi révisions médecine – Statistiques</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="css/styleV2.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="header">
+    <div class="header-top">
+      <h1>📊 Statistiques</h1>
+      <button id="btn-theme-toggle" class="theme-toggle-btn" title="Mode sombre">🌙</button>
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Suivi général</a>
+        <a href="planningV2.html" class="nav-link">Planning de re-révisions</a>
+        <a href="statsV2.html" class="nav-link active">Statistiques</a>
+      </nav>
+    </div>
+
+    <div class="deadline-box">
+      <div class="deadline-title">Date de fin de révisions : 30 août 2026</div>
+      <div class="deadline-progress-bar-background">
+        <div id="deadline-progress-bar" class="deadline-progress-bar-fill"></div>
+      </div>
+      <p id="deadline-countdown"></p>
+    </div>
+    
+    <button id="btn-motivation" class="motivation-btn">✨ Phrase de motivation</button>
+    <div id="motivation-box" class="motivation-box" style="display:none;"></div>
+  </header>
+
+  <main class="container">
+    
+    <!-- 1. Cartes Résumé (KPIs) - ORDRE MODIFIÉ -->
+    <section class="stats-summary-grid-4">
+      <!-- Total tout à gauche -->
+      <div class="stat-card">
+        <div class="stat-icon">🎓</div>
+        <div class="stat-info">
+          <h3>Total Appris</h3>
+          <p class="stat-value" id="stat-total-count">-</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-info">
+          <h3>Cette semaine</h3>
+          <p class="stat-value" id="stat-week-count">-</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">🗓️</div>
+        <div class="stat-info">
+          <h3>Ce mois-ci</h3>
+          <p class="stat-value" id="stat-month-count">-</p>
+        </div>
+      </div>
+
+      <!-- Dette tout à droite -->
+      <div class="stat-card">
+        <div class="stat-icon">🧨</div>
+        <div class="stat-info">
+          <h3>Dette (Retard)</h3>
+          <p class="stat-value" id="stat-late-count">-</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Projections uniquement -->
+    <section class="stats-grid-secondary single-box">
+      <div class="stat-box projection-box">
+        <h3>🔮 Prévisions & Rythme</h3>
+        <div class="projection-content">
+            <div>
+                <p>Vitesse moyenne :</p>
+                <strong id="stat-pace">0</strong> chaps/jour
+            </div>
+            <div class="divider"></div>
+            <div>
+                <p>Fin estimée :</p>
+                <strong id="stat-estimated-end">...</strong>
+            </div>
+        </div>
+        <div class="mini-note" id="stat-estimated-note">Calcul basé sur tes dates réelles d'apprentissage.</div>
+      </div>
+    </section>
+
+    <!-- 3. Graphiques d'analyse -->
+    <div class="charts-row">
+      <!-- Activité récente -->
+      <section class="stats-section half-width">
+        <h2>📈 Activité Complète (7 derniers jours)</h2>
+        <p class="chart-desc">Chapitres appris + Re-révisions faites</p>
+        <div class="chart-container-small">
+          <canvas id="activityChart"></canvas>
+        </div>
+      </section>
+
+      <!-- Jours productifs -->
+      <section class="stats-section half-width">
+        <h2>⚡ Jours Productifs</h2>
+        <p class="chart-desc">Moyenne d'actions validées par jour de la semaine (apprentissage + révisions).</p>
+        <div class="chart-container-small">
+          <canvas id="weekdayChart"></canvas>
+        </div>
+      </section>
+    </div>
+
+    <!-- La Vague -->
+    <section class="stats-section">
+        <h2>🌊 La Vague (Charge de travail - 30j)</h2>
+        <p class="chart-desc">Cumul des re-révisions programmées.</p>
+        <div class="chart-container-medium">
+          <canvas id="futureLoadChart"></canvas>
+        </div>
+    </section>
+
+    <!-- 4. Tops & Flops -->
+    <section class="stats-section">
+      <h2>🏆 Top 3 (Matières les plus avancées)</h2>
+      <div id="top-subjects-container" class="top-subjects-container"></div>
+    </section>
+
+    <section class="stats-section">
+      <h2>⚠️ Flop 3 (Matières les moins avancées)</h2>
+      <div id="flop-subjects-container" class="top-subjects-container"></div>
+    </section>
+
+    <!-- 5. Détail -->
+    <section class="stats-section">
+      <h2>📚 Suivi détaillé par Matière</h2>
+      <div id="subjects-list" class="subjects-list"></div>
+    </section>
+
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="js/dataV2.js"></script>
+  <script src="js/commonV2.js"></script>
+  <script src="js/statsV2.js"></script>
+</body>
+</html>

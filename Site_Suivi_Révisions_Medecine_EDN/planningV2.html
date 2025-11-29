@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Suivi révisions médecine – Planning de re-révisions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="css/styleV2.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-top">
+      <h1>📆 Planning de re-révisions</h1>
+      <button id="btn-theme-toggle" class="theme-toggle-btn" title="Mode sombre">🌙</button>
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Suivi général</a>
+        <a href="planningV2.html" class="nav-link active">Planning de re-révisions</a>
+        <a href="statsV2.html" class="nav-link">Statistiques</a>
+      </nav>
+    </div>
+
+    <div class="deadline-box">
+      <div class="deadline-title">Date de fin de révisions : 30 août 2026</div>
+      <div class="deadline-progress-bar-background">
+        <div id="deadline-progress-bar" class="deadline-progress-bar-fill"></div>
+      </div>
+      <p id="deadline-countdown"></p>
+    </div>
+
+    <button id="btn-motivation" class="motivation-btn"> ✨ Phrase de motivation</button>
+    <div id="motivation-box" class="motivation-box" style="display:none;"></div>
+
+    
+    <nav class="sub-nav">
+       <a href="#section-today" class="nav-button">🕒 Re-révisions du jour</a>
+      <a href="#section-week" class="nav-button">📅 Vue hebdomadaire</a>
+      <a href="#section-month" class="nav-button">📆 Vue mensuelle</a>
+    </nav>
+  </header>
+
+  <main class="container planning-container">
+    <!-- A. Prochaines re-révisions -->
+<section id="section-today" class="planning-section">
+  <h2>🕒 Re-révisions du jour</h2>
+
+  <p class="section-note">
+    Toutes les re-révisions prévues pour la journée affichée (et éventuellement les retards).
+  </p>
+
+  <!-- NAV + DATE JUSTE AU-DESSUS DE LA CHECKBOX -->
+  <div class="today-nav">
+    <button id="today-prev" class="nav-button">⬅ Jour précédent</button>
+    <span id="today-label" class="today-label"></span>
+    <button id="today-next" class="nav-button">Jour suivant ➡</button>
+  </div>
+
+  <div class="today-controls">
+    <label>
+      <input type="checkbox" id="today-include-past" checked>
+      Inclure aussi les re-révisions en retard
+    </label>
+  </div>
+
+  <ul id="today-reviews-list" class="reviews-list"></ul>
+</section>
+
+
+
+    <!-- C. Vue hebdomadaire -->
+    <section id="section-week" class="planning-section">
+      <h2>📅 Vue hebdomadaire</h2>
+      <div class="week-controls">
+        <button id="week-prev" class="nav-button">⬅ Semaine précédente</button>
+        <span id="week-label" class="week-label"></span>
+        <button id="week-next" class="nav-button">Semaine suivante ➡</button>
+      </div>
+      <div id="week-view" class="week-view"></div>
+    </section>
+
+    <!-- B. Vue mensuelle -->
+    <section id="section-month" class="planning-section">
+      <h2>📆 Vue mensuelle</h2>
+      <div class="month-controls">
+        <button id="month-prev" class="nav-button">⬅ Mois précédent</button>
+        <span id="month-label" class="month-label"></span>
+        <button id="month-next" class="nav-button">Mois suivant ➡</button>
+      </div>
+      <div id="month-view" class="month-view"></div>
+    </section>
+  </main>
+
+    <!-- Options d'affichage -->
+    <section class="planning-section planning-options">
+      <h2>⚙️ Options d’affichage</h2>
+      <div class="title-length-controls">
+        <label for="title-length-input">
+          Longueur max des titres dans les pastilles (semaine + mois) :
+        </label>
+        <input
+          type="number"
+          id="title-length-input"
+          min="1"
+          max="80"
+          value="32">
+        <button type="button" id="btn-apply-title-length" class="nav-button">
+          Appliquer
+        </button>
+
+    <div class="planning-width-controls">
+    <label for="planning-width-input">
+      Largeur max utilisée par les plannings (en px) :
+    </label>
+    <input
+      type="number"
+      id="planning-width-input"
+      min="900"
+      max="1800"
+      step="10">
+    <button type="button" id="btn-apply-planning-width" class="nav-button">
+      Appliquer la largeur
+    </button>
+  </div>
+
+
+        <!-- NOUVEAU : toggle pour afficher ou non (n° et J+) -->
+        <label class="meta-toggle-label">
+          <input type="checkbox" id="title-meta-toggle" checked>
+          Afficher (n° et J+)
+        </label>
+      </div>
+
+    </section>
+
+
+  <!-- Modal infos chapitre / re-révisions -->
+  <div id="chapter-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-content">
+      <button class="modal-close" id="modal-close">✖</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script src="js/dataV2.js"></script>
+  <script src="js/commonV2.js"></script>
+  <script src="js/planningV2.js"></script>
+</body>
+</html>

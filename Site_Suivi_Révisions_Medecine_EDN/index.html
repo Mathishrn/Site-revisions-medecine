@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Suivi révisions médecine – Suivi général</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="css/styleV2.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-top">
+      <h1>📕 Suivi général</h1>
+      <button id="btn-theme-toggle" class="theme-toggle-btn" title="Mode sombre">🌙</button>
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link active">Suivi général</a>
+        <a href="planningV2.html" class="nav-link">Planning de re-révisions</a>
+        <a href="statsV2.html" class="nav-link">Statistiques</a>
+      </nav>
+    </div>
+
+    <div class="deadline-box">
+      <div class="deadline-title">Date de fin de révisions : 30 août 2026</div>
+      <div class="deadline-progress-bar-background">
+        <div id="deadline-progress-bar" class="deadline-progress-bar-fill"></div>
+      </div>
+      <p id="deadline-countdown"></p>
+    </div>
+
+    <button id="btn-motivation" class="motivation-btn">✨ Phrase de motivation</button>
+    <div id="motivation-box" class="motivation-box" style="display:none;"></div>
+  </header>
+
+  <main class="container">
+    <!-- Progression globale chapitres -->
+    <section class="progress-section">
+      <div class="progress-bar-background">
+        <div id="progress-bar" class="progress-bar-fill"></div>
+      </div>
+      <p id="progress-text" class="progress-text"></p>
+    </section>
+
+    <!-- Recherche + sauvegarde/chargement -->
+    <section class="controls">
+  <div class="search-wrapper">
+    <label for="search-input">🔍 Rechercher un chapitre :</label>
+    <input
+      type="text"
+      id="search-input"
+      placeholder="Numéro ou titre (ex : 25, grossesse...)">
+  </div>
+
+  <div class="filters-wrapper">
+    <label>
+      <input type="checkbox" id="filter-completed">
+      Afficher les chapitres déjà appris
+    </label>
+  </div>
+
+  <div class="buttons-wrapper">
+    <button id="btn-save">💾 Sauvegarder la progression</button>
+    <button id="btn-load">📂 Charger une progression</button>
+    <input type="file" id="file-input" accept=".json" style="display:none">
+  </div>
+</section>
+
+    <!-- Liste des chapitres -->
+    <section>
+      <ul id="liste-chapitres" class="chapters-list">
+        <!-- Rempli par index.js -->
+      </ul>
+    </section>
+  </main>
+
+  <!-- Modal infos chapitre / re-révisions -->
+  <div id="chapter-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-content">
+      <button class="modal-close" id="modal-close">✖</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Mini modal pour choisir la date de 1ère apprentissage -->
+  <div id="date-modal" class="mini-modal" aria-hidden="true">
+    <div class="mini-modal-backdrop" id="date-modal-backdrop"></div>
+    <div class="mini-modal-content">
+      <h3>Choisir la date de 1<sup>re</sup> apprentissage</h3>
+      <p>Tu peux corriger la date si tu avais déjà vu ce chapitre avant.</p>
+      <input type="date" id="date-modal-input">
+      <div class="mini-modal-buttons">
+        <button id="date-modal-cancel">Annuler</button>
+        <button id="date-modal-ok">Valider</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast de félicitations / messages rapides -->
+  <div id="toast" class="toast"></div>
+
+  <script src="js/dataV2.js"></script>
+  <script src="js/commonV2.js"></script>
+  <script src="js/indexV2.js"></script>
+</body>
+</html>

@@ -1,0 +1,505 @@
+document.addEventListener("DOMContentLoaded", () => {
+  const state = loadState();
+  updateDeadlineBox(state);
+
+  const motivationBtn = document.getElementById("btn-motivation");
+  const motivationBox = document.getElementById("motivation-box");
+  if (motivationBtn && motivationBox) {
+    motivationBtn.addEventListener("click", () => {
+      const msg = buildMotivationMessage(state);
+      motivationBox.textContent = msg;
+      motivationBox.style.display = "block";
+    });
+  }
+
+  calculateAndRenderStats(state);
+});
+
+function calculateAndRenderStats(state) {
+  const subjectsMap = {}; 
+  
+  // learnedDates = 1ères fois uniquement (pour définir la date de début)
+  let learnedDates = []; 
+  
+  // allActionsDates = TOUTES les actions (pour l'activité et moyenne par jour)
+  let allActionsDates = [];
+
+  const allReviewsFuture = []; 
+  let totalLate = 0; 
+  const todayStr = formatDateISO(new Date());
+
+  CHAPITRES.forEach(ch => {
+    const st = state.chapters[ch.id];
+    const isDone = st && st.completed;
+    
+    // Stats par matière
+    const matList = (ch.matieres && ch.matieres.length > 0) ? ch.matieres : ["Autres / Transversal"];
+    matList.forEach(mat => {
+      if (!subjectsMap[mat]) {
+        subjectsMap[mat] = { name: mat, total: 0, done: 0 };
+      }
+      subjectsMap[mat].total++;
+      if (isDone) subjectsMap[mat].done++;
+    });
+
+    // Dates
+    if (isDone && st.learnedDate) {
+      learnedDates.push(st.learnedDate);
+      allActionsDates.push(st.learnedDate);
+    }
+
+    if (st && Array.isArray(st.reviews)) {
+      st.reviews.forEach(r => {
+        if (r.done && r.date) {
+            allActionsDates.push(r.date);
+        }
+        if (!r.done && r.date) {
+            allReviewsFuture.push(r.date);
+            if (r.date <= todayStr) totalLate++;
+        }
+      });
+    }
+  });
+
+  learnedDates.sort();
+  allActionsDates.sort();
+
+  // --- RENDUS ---
+
+  // A. KPIs
+  renderKPIs(learnedDates, state, totalLate);
+
+  // B. Projections
+  renderProjections(learnedDates, state);
+
+  // C. Activité (Total actions)
+  renderActivityChart(allActionsDates); 
+
+  // D. Jours Productifs (MOYENNE)
+  renderWeekdayChart(allActionsDates, learnedDates);
+
+  // E. La Vague
+  renderFutureLoadChart(allReviewsFuture);
+
+  // F. Tops & Flops (Podiums)
+  const subjectsArray = Object.values(subjectsMap);
+  subjectsArray.forEach(sub => {
+    sub.percent = sub.total > 0 ? (sub.done / sub.total) * 100 : 0;
+  });
+
+  // FILTRE : On exclut "Autres / Transversal" uniquement pour les Podiums
+  const subjectsForPodium = subjectsArray.filter(s => s.name !== "Autres / Transversal");
+
+  // Top (Décroissant) - Basé sur la liste filtrée
+  const sortedDesc = [...subjectsForPodium].sort((a, b) => b.percent - a.percent || b.done - a.done);
+  renderSubjectsCards(sortedDesc.slice(0, 3), "top-subjects-container", true);
+
+  // Flop (Croissant, >0 items, <100%) - Basé sur la liste filtrée
+  const sortedAsc = [...subjectsForPodium]
+    .filter(s => s.total > 0 && s.percent < 100)
+    .sort((a, b) => a.percent - b.percent || a.done - b.done);
+  renderSubjectsCards(sortedAsc.slice(0, 3), "flop-subjects-container", false);
+
+  // G. Liste détaillée (On garde tout ici, y compris "Autres")
+  const subjectsAlpha = [...subjectsArray].sort((a, b) => a.name.localeCompare(b.name));
+  renderSubjectsList(subjectsAlpha, state);
+}
+
+// -------------------------------------------------------------------------
+// Helpers KPIs & Projections
+// -------------------------------------------------------------------------
+
+function renderKPIs(learnedDates, state, totalLate) {
+  const weekElem = document.getElementById("stat-week-count");
+  const monthElem = document.getElementById("stat-month-count");
+  const lateElem = document.getElementById("stat-late-count"); 
+  const totalElem = document.getElementById("stat-total-count");
+
+  const today = new Date();
+  const currentMonthISO = formatDateISO(today).substring(0, 7);
+  
+  const d = new Date(today);
+  const day = d.getDay(); 
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
+  const monday = new Date(d.setDate(diff));
+  const mondayISO = formatDateISO(monday);
+
+  let weekCount = 0;
+  let monthCount = 0;
+
+  learnedDates.forEach(dateStr => {
+    if (dateStr.startsWith(currentMonthISO)) monthCount++;
+    if (dateStr >= mondayISO) weekCount++;
+  });
+
+  let totalDone = 0;
+  CHAPITRES.forEach(ch => {
+    if (state.chapters[ch.id] && state.chapters[ch.id].completed) totalDone++;
+  });
+
+  weekElem.textContent = weekCount;
+  monthElem.textContent = monthCount;
+  totalElem.textContent = `${totalDone} / ${CHAPITRES.length}`;
+  
+  lateElem.textContent = totalLate;
+  lateElem.style.color = totalLate > 0 ? "#c62828" : "#2e7d32";
+  if(totalLate === 0) lateElem.textContent = "0 🎉";
+}
+
+function renderProjections(learnedDates, state) {
+  const paceElem = document.getElementById("stat-pace");
+  const endElem = document.getElementById("stat-estimated-end");
+  const noteElem = document.getElementById("stat-estimated-note");
+  const realDoneCount = learnedDates.length;
+
+  if (realDoneCount < 3) {
+    paceElem.textContent = "-";
+    endElem.textContent = "Calcul en cours...";
+    noteElem.textContent = "Données insuffisantes.";
+    return;
+  }
+
+  let start = parseDate(learnedDates[0]); 
+  const today = new Date();
+  const diffTime = Math.abs(today - start);
+  const daysElapsed = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+  const pace = realDoneCount / daysElapsed; 
+  paceElem.textContent = pace.toFixed(2);
+
+  const remaining = CHAPITRES.length - realDoneCount;
+  if (remaining <= 0) {
+    endElem.textContent = "Terminé ! 🎓";
+  } else {
+    const daysNeeded = Math.ceil(remaining / pace);
+    const estimatedDate = addDays(today, daysNeeded);
+    endElem.textContent = estimatedDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+    noteElem.textContent = `Basé sur ton rythme depuis le ${start.toLocaleDateString("fr-FR")}.`;
+  }
+}
+
+// -------------------------------------------------------------------------
+// Graphiques
+// -------------------------------------------------------------------------
+
+function renderActivityChart(allActionsDates) {
+  const ctx = document.getElementById('activityChart');
+  if (!ctx) return;
+
+  const labels = [];
+  const dataCounts = [];
+  const today = new Date();
+
+  for (let i = 6; i >= 0; i--) {
+    const d = addDays(today, -i);
+    const iso = formatDateISO(d);
+    labels.push(d.toLocaleDateString("fr-FR", { weekday: "short" }));
+    const count = allActionsDates.filter(ld => ld === iso).length;
+    dataCounts.push(count);
+  }
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Actions validées',
+        data: dataCounts,
+        backgroundColor: '#2f7e5f',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+        x: { grid: { display: false } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+// --- Jours Productifs (MOYENNE) ---
+function renderWeekdayChart(allActionsDates, learnedDates) {
+    const ctx = document.getElementById('weekdayChart');
+    if (!ctx) return;
+
+    // 1. Calculer le total par jour
+    const totalActionsByDay = [0,0,0,0,0,0,0];
+    allActionsDates.forEach(iso => {
+        const d = parseDate(iso);
+        const dayIdx = d.getDay();
+        totalActionsByDay[dayIdx]++;
+    });
+
+    // 2. Calculer le nombre d'occurrences de chaque jour depuis le début
+    const occurrencesByDay = [0,0,0,0,0,0,0];
+    
+    let startDate = learnedDates.length > 0 ? parseDate(learnedDates[0]) : new Date();
+    const today = new Date(); 
+
+    let current = new Date(startDate);
+    current.setHours(12,0,0,0);
+    const endLoop = new Date(today);
+    endLoop.setHours(12,0,0,0);
+
+    while (current <= endLoop) {
+        const dIdx = current.getDay();
+        occurrencesByDay[dIdx]++;
+        current.setDate(current.getDate() + 1);
+    }
+
+    // 3. Calculer la moyenne
+    const averageData = [];
+    for(let i=0; i<7; i++) {
+        const count = occurrencesByDay[i] > 0 ? (totalActionsByDay[i] / occurrencesByDay[i]) : 0;
+        averageData[i] = parseFloat(count.toFixed(1)); 
+    }
+
+    // 4. Réorganiser Lun->Dim
+    const sundayVal = averageData.shift(); 
+    averageData.push(sundayVal);
+
+    const labels = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Moyenne actions / jour',
+                data: averageData,
+                backgroundColor: 'rgba(255, 112, 67, 0.8)',
+                borderColor: '#ff7043',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true },
+                x: { grid: { display: false } }
+            },
+            plugins: { 
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.raw + " actions en moyenne";
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderFutureLoadChart(allReviewsFuture) {
+    const ctx = document.getElementById('futureLoadChart');
+    if (!ctx) return;
+
+    const labels = [];
+    const dataCounts = [];
+    const today = new Date();
+
+    for (let i = 0; i < 30; i++) {
+        const d = addDays(today, i);
+        const iso = formatDateISO(d);
+        labels.push(d.getDate() + '/' + (d.getMonth()+1));
+        const count = allReviewsFuture.filter(rd => rd === iso).length;
+        dataCounts.push(count);
+    }
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Révisions prévues',
+                data: dataCounts,
+                borderColor: '#7e57c2',
+                backgroundColor: 'rgba(126, 87, 194, 0.2)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true },
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 15 } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+// --- PODIUM + ANIMATION ---
+function renderSubjectsCards(list, containerId, isTop) {
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.innerHTML = "";
+  
+  container.className = "podium-container";
+
+  if (list.length === 0) {
+      container.innerHTML = "<p style='color:#777; font-size:13px; align-self:center;'>Données insuffisantes...</p>";
+      return;
+  }
+
+  const medals = isTop ? ["🥇", "🥈", "🥉"] : ["⚠️", "🚧", "🐌"];
+  
+  const podiumOrder = [];
+  
+  if (list[1]) podiumOrder.push({ data: list[1], rank: 2, icon: medals[1] });
+  if (list[0]) podiumOrder.push({ data: list[0], rank: 1, icon: medals[0] });
+  if (list[2]) podiumOrder.push({ data: list[2], rank: 3, icon: medals[2] });
+
+  podiumOrder.forEach((item) => {
+    const sub = item.data;
+    const rankClass = `rank-${item.rank}`;
+    const fillClass = isTop ? "top-fill" : "flop-fill"; 
+
+    const card = document.createElement("div");
+    card.className = `podium-card ${rankClass}`;
+    
+    const fillDiv = document.createElement("div");
+    fillDiv.className = `podium-fill ${fillClass}`;
+    
+    const contentDiv = document.createElement("div");
+    contentDiv.className = "podium-content";
+
+    const iconDiv = document.createElement("div");
+    iconDiv.className = "podium-medal";
+    iconDiv.textContent = item.icon;
+
+    const titleDiv = document.createElement("div");
+    titleDiv.className = "podium-title";
+    titleDiv.textContent = sub.name;
+
+    const percentDiv = document.createElement("div");
+    percentDiv.className = "podium-percent";
+    percentDiv.textContent = `${sub.percent.toFixed(0)}%`;
+
+    if (isTop) {
+        percentDiv.style.color = "#2e7d32";
+    } else {
+        percentDiv.style.color = "#c62828";
+    }
+
+    contentDiv.appendChild(iconDiv);
+    contentDiv.appendChild(titleDiv);
+    contentDiv.appendChild(percentDiv);
+
+    card.appendChild(fillDiv);
+    card.appendChild(contentDiv);
+    container.appendChild(card);
+
+    setTimeout(() => {
+        fillDiv.style.height = `${sub.percent}%`;
+    }, 100);
+  });
+}
+
+
+// --- Liste Détaillée ---
+function renderSubjectsList(subjects, state) {
+  const container = document.getElementById("subjects-list");
+  container.innerHTML = "";
+
+  subjects.forEach(sub => {
+    const itemDiv = document.createElement("div");
+    itemDiv.className = "subject-item";
+
+    const header = document.createElement("div");
+    header.className = "subject-header";
+    
+    const infoDiv = document.createElement("div");
+    infoDiv.className = "subject-info";
+
+    const nameRow = document.createElement("div");
+    nameRow.className = "subject-name-row";
+    
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "subject-name";
+    nameSpan.textContent = sub.name;
+
+    const countSpan = document.createElement("span");
+    countSpan.className = "subject-count";
+    countSpan.textContent = `${sub.done}/${sub.total}`;
+
+    nameRow.appendChild(nameSpan);
+    nameRow.appendChild(countSpan);
+
+    const progressBg = document.createElement("div");
+    progressBg.className = "subject-progress-bg";
+    
+    const progressFill = document.createElement("div");
+    progressFill.className = "subject-progress-fill";
+    progressFill.style.width = `${sub.percent}%`;
+    
+    if (sub.percent < 30) progressFill.style.backgroundColor = "#e57373"; 
+    else if (sub.percent < 70) progressFill.style.backgroundColor = "#ffb74d"; 
+    else progressFill.style.backgroundColor = "#66bb6a"; 
+
+    progressBg.appendChild(progressFill);
+    
+    const percentText = document.createElement("div");
+    percentText.className = "subject-percent-text";
+    percentText.textContent = `${sub.percent.toFixed(2)}%`;
+    percentText.style.color = progressFill.style.backgroundColor;
+
+    infoDiv.appendChild(nameRow);
+    infoDiv.appendChild(progressBg);
+    infoDiv.appendChild(percentText);
+
+    header.appendChild(infoDiv);
+
+    const content = document.createElement("div");
+    content.className = "subject-content";
+    const ul = document.createElement("ul");
+    
+    sub.chapters = [];
+    CHAPITRES.forEach(ch => {
+        const mat = (ch.matieres && ch.matieres.length > 0) ? ch.matieres : ["Autres / Transversal"];
+        if (mat.includes(sub.name)) {
+             sub.chapters.push({
+                 id: ch.id, 
+                 title: ch.titre, 
+                 done: state.chapters[ch.id].completed
+             });
+        }
+    });
+
+    sub.chapters.forEach(ch => {
+      const li = document.createElement("li");
+      li.className = ch.done ? "subject-chapter done" : "subject-chapter";
+      
+      const icon = document.createElement("span");
+      icon.textContent = ch.done ? "✅" : "⬜";
+      icon.style.marginRight = "8px";
+
+      const text = document.createElement("span");
+      text.textContent = `${ch.id}. ${ch.title}`;
+
+      li.appendChild(icon);
+      li.appendChild(text);
+      ul.appendChild(li);
+    });
+    content.appendChild(ul);
+
+    header.addEventListener("click", () => {
+      itemDiv.classList.toggle("open");
+    });
+
+    itemDiv.appendChild(header);
+    itemDiv.appendChild(content);
+    container.appendChild(itemDiv);
+  });
+}
