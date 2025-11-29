@@ -542,7 +542,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-// --- GESTION DU FEEDBACK ---
+// --- GESTION DU FEEDBACK (CORRIGÉ) ---
 
 document.addEventListener("DOMContentLoaded", () => {
   const btnOpen = document.getElementById("btn-open-feedback");
@@ -568,33 +568,39 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnClose) btnClose.addEventListener("click", closeFeedback);
   if (backdrop) backdrop.addEventListener("click", closeFeedback);
 
-  // Soumission du formulaire en AJAX (sans recharger la page)
+  // Soumission du formulaire
   if (form) {
     form.addEventListener("submit", (e) => {
-      e.preventDefault(); // Empêche le rechargement
+      e.preventDefault(); // On ne recharge pas la page
 
       const submitBtn = form.querySelector(".submit-btn");
       const originalText = submitBtn.textContent;
       submitBtn.textContent = "Envoi en cours...";
       submitBtn.disabled = true;
 
-      const formData = new FormData(form);
+      // Création des données (incluant le fichier s'il y en a un)
+      const myFormData = new FormData(form);
 
+      // Envoi à Netlify
       fetch("/", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        // Astuce Netlify: il faut convertir le FormData pour qu'il passe
-        // sauf si fichier, mais avec fetch simple et Netlify, cette méthode est robuste
-        body: new URLSearchParams(formData).toString(),
+        // IMPORTANT : On NE MET PAS de header "Content-Type" ici.
+        // Le navigateur va mettre automatiquement "multipart/form-data" 
+        // avec la bonne frontière pour le fichier.
+        body: myFormData,
       })
-      .then(() => {
-        closeFeedback();
-        showToast("Message envoyé ! Merci pour ton retour 💌");
-        form.reset();
+      .then((response) => {
+        if (response.ok) {
+          closeFeedback();
+          showToast("Message envoyé ! Merci pour ton retour 💌");
+          form.reset();
+        } else {
+          throw new Error("Erreur réseau : " + response.statusText);
+        }
       })
       .catch((error) => {
-        console.error(error);
-        alert("Oups, erreur lors de l'envoi. Tu peux réessayer ?");
+        console.error("Erreur envoi formulaire :", error);
+        alert("Oups, l'envoi a échoué. Vérifie ta connexion.");
       })
       .finally(() => {
         submitBtn.textContent = originalText;
