@@ -512,8 +512,7 @@ btnSave.addEventListener("click", async () => { // Note l'ajout de "async" ici
         const confirmation = window.confirm(
           "Vous êtes sur le point de remplacer votre progression actuelle.\n\n" +
           `Chapitres détectés : ${chaptersCount}\n` +
-          `Date de début : ${formatDateFr(importedState.globalStartDate)}\n\n` +
-          "Une copie de secours sera sauvegardée avant l'import. Continuer ?"
+          `Date de début : ${formatDateFr(importedState.globalStartDate)}\n\n`
         );
 
         if (!confirmation) {
