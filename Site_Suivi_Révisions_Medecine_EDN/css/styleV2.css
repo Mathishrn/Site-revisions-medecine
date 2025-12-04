@@ -1714,3 +1714,77 @@ body.dark-mode .changelog-details {
 body.dark-mode .changelog-version {
   color: #4db6ac;
 }
+
+/* --- Paramètres --- */
+.settings-content {
+  max-width: 720px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.settings-field input,
+.settings-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-weight: 400;
+}
+
+.settings-field textarea {
+  resize: vertical;
+}
+
+.settings-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.primary-btn {
+  background: #5c7cfa;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.secondary-btn {
+  background: #f1f3f5;
+  color: #1f2933;
+  border: 1px solid #dfe3e8;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.primary-btn:hover,
+.secondary-btn:hover {
+  filter: brightness(0.97);
+}
