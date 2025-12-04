@@ -432,10 +432,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 btnSave.addEventListener("click", async () => { // Note l'ajout de "async" ici
+    const currentSettings = getSettings();
     const data = {
-      version: 1,
+      version: 2,
       date: new Date().toISOString(),
-      state: state
+      state: state,
+      settings: currentSettings
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -493,17 +495,35 @@ btnSave.addEventListener("click", async () => { // Note l'ajout de "async" ici
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
+        
+        // Vérification de base
         if (!data.state || !data.state.chapters) {
           alert("Fichier de progression invalide.");
           return;
         }
+
+        // 1. Restauration de la progression (Chapitres)
         state = mergeWithCurrentChapitres(data.state);
         saveState(state);
 
+        // 2. Restauration des Paramètres (s'ils existent dans le fichier)
+        if (data.settings) {
+          saveSettings(data.settings); // Fonction de commonV2.js
+          console.log("Paramètres restaurés :", data.settings);
+        }
+
+        // 3. Mise à jour de l'interface
         construireListe();
         majProgression();
+        
+        // Mise à jour de la deadline (Barre de progression temporelle) avec les nouveaux paramètres
         updateDeadlineBox(state);
-        alert("Progression chargée avec succès !");
+
+        alert("Progression et paramètres chargés avec succès !");
+        
+        // Petit reload pour être sûr que tout (planning, stats) prenne en compte les nouveaux intervalles
+        window.location.reload(); 
+
       } catch (err) {
         console.error(err);
         alert("Erreur lors de la lecture du fichier.");
@@ -536,6 +556,87 @@ btnSave.addEventListener("click", async () => { // Note l'ajout de "async" ici
     });
 
     return newState;
+  }
+
+  // --- GESTION DES PARAMÈTRES ---
+  const btnSettings = document.getElementById("btn-settings");
+  const modalSettings = document.getElementById("settings-modal");
+  const closeSettings = document.getElementById("settings-close");
+  const backdropSettings = document.getElementById("settings-backdrop");
+  const btnSaveSettings = document.getElementById("btn-save-settings");
+  
+  const inputStart = document.getElementById("set-start-date");
+  const inputEnd = document.getElementById("set-end-date");
+  const inputOffsets = document.getElementById("set-offsets");
+
+  if (btnSettings && modalSettings) {
+    // Ouverture : on charge les valeurs actuelles
+    btnSettings.addEventListener("click", () => {
+      const s = getSettings();
+      inputStart.value = s.startDate;
+      inputEnd.value = s.endDate;
+      inputOffsets.value = s.offsets;
+      
+      modalSettings.classList.add("open");
+    });
+
+    function closeSet() { modalSettings.classList.remove("open"); }
+    closeSettings.addEventListener("click", closeSet);
+    backdropSettings.addEventListener("click", closeSet);
+
+    // Sauvegarde & Recalcul
+    btnSaveSettings.addEventListener("click", () => {
+      const newSettings = {
+        startDate: inputStart.value,
+        endDate: inputEnd.value,
+        offsets: inputOffsets.value
+      };
+
+      if (!newSettings.startDate || !newSettings.endDate || !newSettings.offsets) {
+        alert("Veuillez remplir tous les champs.");
+        return;
+      }
+      
+      const confirmMsg = "⚠️ Attention !\n\nModifier les intervalles va déclencher un RECALCUL de toutes les futures révisions de tes chapitres déjà appris.\n\nLes révisions déjà effectuées ne bougeront pas.\nLes révisions futures seront recalées sur tes nouveaux intervalles.\n\nContinuer ?";
+      
+      if (confirm(confirmMsg)) {
+        saveSettings(newSettings);
+        
+        // Fonction magique de commonV2.js
+        const count = recalculateAllSchedules();
+        
+        updateDeadlineBox(loadState()); // Mise à jour barre visuelle
+        closeSet();
+        alert(`Paramètres sauvegardés !\n${count} chapitres ont été mis à jour avec le nouveau planning.`);
+        
+        // On recharge la page pour tout rafraichir proprement
+        window.location.reload();
+      }
+    });
+  }
+
+  // --- GESTION MODAL INFO COOKIES ---
+  const btnInfo = document.getElementById("btn-info");
+  const modalInfo = document.getElementById("info-modal");
+  const closeInfo = document.getElementById("info-close");
+  const backdropInfo = document.getElementById("info-backdrop");
+  const btnInfoOk = document.getElementById("btn-info-ok");
+
+  if (btnInfo && modalInfo) {
+    function openInfo() {
+      modalInfo.classList.add("open");
+      modalInfo.setAttribute("aria-hidden", "false");
+    }
+    
+    function closeInfoModal() {
+      modalInfo.classList.remove("open");
+      modalInfo.setAttribute("aria-hidden", "true");
+    }
+
+    btnInfo.addEventListener("click", openInfo);
+    if(closeInfo) closeInfo.addEventListener("click", closeInfoModal);
+    if(backdropInfo) backdropInfo.addEventListener("click", closeInfoModal);
+    if(btnInfoOk) btnInfoOk.addEventListener("click", closeInfoModal);
   }
 
   construireListe();

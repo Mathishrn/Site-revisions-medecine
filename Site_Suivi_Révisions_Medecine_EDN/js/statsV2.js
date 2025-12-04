@@ -67,7 +67,8 @@ function calculateAndRenderStats(state) {
   // --- RENDUS ---
 
   // A. KPIs
-  renderKPIs(learnedDates, state, totalLate);
+  const kpiData = renderKPIs(learnedDates, state, totalLate);
+  renderGoals(kpiData.weekCount, allActionsDates);
 
   // B. Projections
   renderProjections(learnedDates, state);
@@ -144,6 +145,8 @@ function renderKPIs(learnedDates, state, totalLate) {
   lateElem.textContent = totalLate;
   lateElem.style.color = totalLate > 0 ? "#c62828" : "#2e7d32";
   if(totalLate === 0) lateElem.textContent = "0 🎉";
+
+  return { weekCount, monthCount };
 }
 
 function renderProjections(learnedDates, state) {
@@ -503,3 +506,75 @@ function renderSubjectsList(subjects, state) {
     container.appendChild(itemDiv);
   });
 }
+
+// --- GESTION DES OBJECTIFS ---
+function renderGoals(weekCount, allActionsDates) {
+  // 1. Calcul du compte journalier (todayCount)
+  const todayISO = formatDateISO(new Date());
+  const todayCount = allActionsDates.filter(d => d === todayISO).length;
+
+  // 2. Récupération des objectifs sauvegardés
+  const savedDayGoal = localStorage.getItem("goal_day") || 5;
+  const savedWeekGoal = localStorage.getItem("goal_week") || 30;
+
+  const dayInput = document.getElementById("goal-day-input");
+  const weekInput = document.getElementById("goal-week-input");
+  
+  if(dayInput) {
+    dayInput.value = savedDayGoal;
+    // Mise à jour visuelle
+    updateGoalUI("day", todayCount, savedDayGoal);
+    
+    // Sauvegarde au changement
+    dayInput.addEventListener("change", (e) => {
+      const val = e.target.value;
+      localStorage.setItem("goal_day", val);
+      updateGoalUI("day", todayCount, val);
+    });
+  }
+
+  if(weekInput) {
+    weekInput.value = savedWeekGoal;
+    updateGoalUI("week", weekCount, savedWeekGoal);
+
+    weekInput.addEventListener("change", (e) => {
+      const val = e.target.value;
+      localStorage.setItem("goal_week", val);
+      updateGoalUI("week", weekCount, val);
+    });
+  }
+}
+
+function updateGoalUI(type, current, max) {
+  const bar = document.getElementById(`goal-${type}-bar`);
+  const text = document.getElementById(`goal-${type}-text`);
+  
+  const pct = Math.min(100, (current / max) * 100);
+  
+  if(bar) bar.style.width = `${pct}%`;
+  if(text) text.textContent = `${current} / ${max}`;
+  
+  // Couleur verte si atteint
+  if(bar && pct >= 100) bar.style.backgroundColor = "#4caf50";
+  else if (bar) bar.style.backgroundColor = "#29b6f6";
+}
+
+// --- RECHERCHE MATIÈRE ---
+document.addEventListener("DOMContentLoaded", () => {
+  const searchInput = document.getElementById("subject-search");
+  if(searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      const term = e.target.value.toLowerCase();
+      const items = document.querySelectorAll(".subject-item");
+      
+      items.forEach(item => {
+        const name = item.querySelector(".subject-name").textContent.toLowerCase();
+        if(name.includes(term)) {
+          item.style.display = "";
+        } else {
+          item.style.display = "none";
+        }
+      });
+    });
+  }
+});

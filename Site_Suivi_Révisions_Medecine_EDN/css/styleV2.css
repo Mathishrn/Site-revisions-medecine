@@ -44,6 +44,7 @@ a {
   background: #2f7e5f;
   color: #fff;
   padding: 16px 18px 18px;
+  position: relative;
 }
 
 .planning-page .header {
@@ -1271,10 +1272,35 @@ button:active {
 .podium-percent { font-size: 18px; font-weight: 800; }
 
 /* Liste Détaillée */
-.subjects-list {
+
+#subjects-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+
+  /* HAUTEUR ET SCROLL */
+  max-height: 650px !important;  
+  overflow-y: auto !important;   
+  
+  /* ESTHÉTIQUE */
+  padding: 10px;
+  padding-right: 8px; 
+  border: 1px solid #ccc; /* Bordure grise standard */
+  border-radius: 8px;
+  
+  /* IMPORTANT : Fond solide pour éviter les soucis de transparence */
+  background: #ffffff; 
+}
+
+/* Ajustement spécifique Dark Mode */
+body.dark-mode #subjects-list {
+  border-color: #444 !important;
+  background: #1e1e1e !important; /* Fond noir/gris foncé solide */
+}
+
+/* S'assurer que les enfants (les matières) sont bien visibles */
+.subject-item {
+  flex-shrink: 0; /* Empêche les éléments de s'écraser */
 }
 
 .subject-item {
@@ -1485,26 +1511,48 @@ body.dark-mode .podium-fill {
 }
 
 
+/* --- 3. RELOOKING BOUTON NOUVEAUTÉS --- */
+/* Remplace tout le bloc .theme-toggle-btn2 par ceci */
 .theme-toggle-btn2 {
-  background: rgba(0,0,0,0.2);
-  border: none;
-  cursor: pointer;
-  font-size: 25px;
-  padding: 6px 10px;
-  border-radius: 50%;
-  transition: transform 0.2s;
-  margin-left: 0;
-  color: #fff;
-  /* CENTRAGE ABSOLU SUR LE HEADER */
+  /* Positionnement */
   position: absolute;
-  left: 84%;
-  top: 180%;
-  transform: translate(-10%, -10%);
+  top: 20px;
+  right: 20px;
+  left: auto;
+  margin: 0;
+  transform: none;
+
+  /* TAILLE EXACTE DU CONTENU */
+  width: fit-content;  /* <--- Important : force la taille à s'adapter au contenu */
+  padding: 6px 12px;   /* <--- Réduis ces chiffres pour serrer plus ou moins */
+  
+  /* Apparence */
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  cursor: pointer;
+  
+  /* Alignement interne (Cloche + Texte) */
+  display: flex;
+  align-items: center;
+  gap: 6px;            /* <--- Espace entre la cloche et le texte */
+  white-space: nowrap; /* <--- Empêche le texte de passer à la ligne */
+  left: 85%;
+  top: 170%;
+  z-index: 200;
+  transition: transform 0.2s;
 }
+
 .theme-toggle-btn2:hover {
-  background: rgba(255,255,255,0.1);
-  transform: rotate(5deg) translate(-15%, -15%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
 }
+
+
 /* Bouton Dark Mode */
 .theme-toggle-btn {
   background: rgba(0,0,0,0.2);
@@ -1521,6 +1569,7 @@ body.dark-mode .podium-fill {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+    z-index: 100; /* <--- LIGNE AJOUTÉE POUR CORRIGER LE CLIC */
 }
 .theme-toggle-btn:hover {
   background: rgba(255,255,255,0.1);
@@ -1713,4 +1762,339 @@ body.dark-mode .changelog-details {
 }
 body.dark-mode .changelog-version {
   color: #4db6ac;
+}
+
+/* --- AJOUTS V2.2 : Paramètres & Objectifs --- */
+
+/* Bouton Paramètres (Index) */
+.settings-btn {
+  /* Apparence */
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255,255,255,0.6);
+  color: white;
+  border-radius: 8px; /* Un peu plus arrondi */
+  
+  /* TAILLE : Modifie ces 2 lignes pour ajuster */
+  padding: 10px 20px;  /* Hauteur, Largeur (essaie 10px 20px si tu veux encore plus gros) */
+  font-size: 16px;    /* Taille du texte */
+  
+  /* Comportement */
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+  transition: all 0.2s ease;
+}
+
+.settings-btn:hover {
+  background: rgba(255,255,255,0.3);
+  transform: scale(1.05); /* Petit effet de grossissement au survol */
+}
+
+/* Modal Paramètres */
+.settings-group {
+  margin-bottom: 16px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 16px;
+}
+.settings-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+.settings-group input[type="date"],
+.settings-group input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+.settings-note {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* Section Objectifs (Stats) */
+.goals-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  border-left: 5px solid #29b6f6;
+}
+.goals-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+}
+.goal-input-group {
+  flex: 1;
+  min-width: 200px;
+}
+.goal-input-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  display: block;
+  margin-bottom: 4px;
+}
+.goal-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.goal-input-wrapper input {
+  width: 70px;
+  padding: 6px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  text-align: center;
+}
+.goal-progress {
+  margin-top: 8px;
+  height: 8px;
+  background: #eee;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.goal-progress-bar {
+  height: 100%;
+  background: #29b6f6;
+  transition: width 0.5s;
+}
+.goal-text {
+  font-size: 12px;
+  margin-top: 4px;
+  color: #666;
+  text-align: right;
+}
+
+/* Recherche Matière (Stats) */
+.subject-search-container {
+  margin-bottom: 16px;
+}
+.subject-search-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* Dark Mode updates */
+body.dark-mode .settings-group { border-bottom-color: #333; }
+body.dark-mode .settings-note { color: #aaa; }
+body.dark-mode .goals-section { background: #1e1e1e; border-left-color: #0288d1; }
+body.dark-mode .goal-input-group label { color: #ccc; }
+body.dark-mode .goal-input-wrapper input, 
+body.dark-mode .subject-search-input { background: #2c2c2c; border-color: #444; color: #fff; }
+body.dark-mode .goal-progress { background: #333; }
+
+/* --- Groupe Titre + Paramètres --- */
+.header-title-group {
+  display: flex;
+  flex-direction: column; /* Empile le titre et le bouton */
+  align-items: flex-start; /* Aligne à gauche */
+  gap: 5px; /* Petit espace entre le titre et le bouton */
+}
+
+/* Ajustement du bouton Paramètres */
+.settings-btn {
+  background: rgba(255, 255, 255, 0.15); /* Fond léger pour qu'il ressorte */
+  border: 1px solid rgba(255,255,255,0.4);
+  color: white;
+  border-radius: 6px; /* Moins rond pour faire plus "bouton outil" */
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0; /* On annule la marge précédente */
+  transition: all 0.2s ease;
+}
+
+.settings-btn:hover {
+  background: rgba(255,255,255,0.3);
+  transform: translateY(-1px);
+}
+
+
+/* --- CORRECTIFS DARK MODE & CSS (V2.3) --- */
+
+/* 1. Page Planning : Les 3 boutons du sous-menu (Re-révisions, Hebdo, Mensuel) */
+body.dark-mode .sub-nav a {
+  background: #2c2c2c;       /* Fond gris foncé */
+  color: #4db6ac;            /* Texte vert d'eau */
+  border: 1px solid #444;    /* Légère bordure */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+body.dark-mode .sub-nav a:hover {
+  background: #3e3e3e;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* 2. Page Stats : Les encadrés blancs (Graphiques, Top/Flop, Liste détaillée) */
+body.dark-mode .stats-section {
+  background: #1e1e1e;       /* Fond foncé unifié */
+  color: #e0e0e0;            /* Texte clair */
+  border: 1px solid #333;    /* Bordure subtile */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* Ombre plus marquée */
+}
+
+/* Titres dans les sections stats */
+body.dark-mode .stats-section h2 {
+  color: #ffffff;
+}
+
+/* 3. Page Stats : Liste détaillée des matières */
+body.dark-mode .subject-item {
+  border-color: #444;        /* Bordure des items de la liste */
+  background: transparent;   /* Pour laisser voir le fond de la section */
+}
+
+/* Header de la matière (la barre cliquable) */
+body.dark-mode .subject-header {
+  background: #262626;
+  color: #e0e0e0;
+}
+
+body.dark-mode .subject-header:hover {
+  background: #333;
+}
+
+/* Contenu déroulant (les chapitres) */
+body.dark-mode .subject-content {
+  background: #1a1a1a;
+  border-top: 1px solid #444;
+}
+
+/* Texte des chapitres dans la liste */
+body.dark-mode .subject-chapter {
+  color: #aaa;
+}
+body.dark-mode .subject-chapter.done {
+  color: #66bb6a; /* Vert plus lumineux pour le dark mode */
+}
+
+
+/* Positionnement du bouton Paramètres sur l'accueil */
+.header > #btn-settings {
+  position: absolute;
+  
+  /* Centrage horizontal */
+  left: 50%;
+  transform: translateX(-50%);
+  
+  /* Alignement vertical avec le bouton motivation */
+  /* On le remonte un peu depuis le bas pour qu'il tombe pile en face */
+  bottom: 20px; 
+  
+  margin: 0;
+  z-index: 90;
+}
+
+/* Sécurité Mobile : Sur petit écran, on annule l'absolu pour qu'il ne chevauche pas */
+@media (max-width: 650px) {
+  .header > #btn-settings {
+    position: static;
+    transform: none;
+    margin: 10px auto 0;
+    display: table;
+  }
+}
+
+/* --- CORRECTIF DARK MODE : MODALE RÉVISIONS --- */
+
+/* 1. Les lignes de révision (non faites) */
+body.dark-mode .modal-review-item {
+  background: #2c2c2c;       /* Fond gris foncé au lieu de blanc */
+  border: 1px solid #444;    /* Bordure discrète */
+  color: #e0e0e0;            /* Texte clair */
+}
+
+/* 2. Les lignes de révision (FAITES / CHECKÉES) */
+body.dark-mode .modal-review-item.done {
+  background: #1b3a28;       /* Fond vert très foncé */
+  border-left-color: #43a047; /* Bordure verte plus lumineuse */
+  color: #a5d6a7;            /* Texte vert clair */
+}
+
+/* 3. Le bouton de fermeture (croix) */
+body.dark-mode .modal-close {
+  color: #fff;               /* Croix blanche */
+}
+body.dark-mode .modal-close:hover {
+  background: #333;          /* Fond gris au survol */
+}
+
+/* 4. Barre de progression dans la modale */
+body.dark-mode .modal-progress-bg {
+  background: #444;          /* Fond de la barre gris foncé */
+}
+
+/* 5. Bouton "Annuler report" (s'il apparait) */
+body.dark-mode .modal-review-reset-btn {
+  background: #444;
+  border-color: #555;
+  color: #ccc;
+}
+body.dark-mode .modal-review-reset-btn:hover {
+  background: #555;
+}
+
+/* --- BOUTON INFO COOKIES --- */
+.info-btn {
+  background: #e3f2fd;    /* Bleu très clair */
+  color: #1565c0;         /* Bleu foncé */
+  border: 1px solid #90caf9;
+  padding: 8px 12px;      /* Carré/Arrondi */
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.info-btn:hover {
+  background: #bbdefb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Dark Mode pour le bouton info et le warning */
+body.dark-mode .info-btn {
+  background: #263238;
+  color: #90caf9;
+  border-color: #546e7a;
+}
+body.dark-mode .info-btn:hover {
+  background: #37474f;
+}
+
+/* Texte spécifique de la modale info en dark mode */
+body.dark-mode h3[style*="color: #d32f2f"] {
+  color: #ef5350 !important; /* Rouge plus clair pour le titre */
+}
+body.dark-mode div[style*="background:#ffebee"] {
+  background: #3e2723 !important; /* Fond rouge très sombre */
+  border-color: #b71c1c !important;
+  color: #ffcdd2 !important;      /* Texte rouge clair */
+}
+
+/* --- FORCAGE TAILLE BOUTON PARAMÈTRES --- */
+#btn-settings {
+  padding: 6px 8px !important;  /* Ajuste ces chiffres (Haut/Bas  Gauche/Droite) */
+  font-size: 15px !important;     /* Ajuste la taille du texte */
+  width: auto !important;         /* Laisse le bouton s'élargir selon le texte */
 }

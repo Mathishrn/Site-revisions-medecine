@@ -132,11 +132,15 @@ function saveState(state) {
 
 function generateReviewSchedule(learnedDateStr) {
   const learnedDate = parseDate(learnedDateStr);
-  const endDate = parseDate(END_DATE_STR);
+  
+  // MODIFICATION : Utilisation des paramètres dynamiques
+  const settings = getSettings();
+  const endDate = parseDate(settings.endDate);
+  const offsets = getOffsetsArray(); // Récupère depuis LS ou défaut
 
   const reviews = [];
-  for (let i = 0; i < REVIEW_OFFSETS_DAYS.length; i++) {
-    const offset = REVIEW_OFFSETS_DAYS[i];
+  for (let i = 0; i < offsets.length; i++) {
+    const offset = offsets[i];
     const reviewDate = addDays(learnedDate, offset);
     if (reviewDate > endDate) {
       break;
@@ -157,30 +161,44 @@ function generateReviewSchedule(learnedDateStr) {
 function updateDeadlineBox(state) {
   const countdownElem = document.getElementById("deadline-countdown");
   const barElem = document.getElementById("deadline-progress-bar");
+  // NOUVEAU : On sélectionne aussi le titre pour changer la date affichée
+  const titleElem = document.querySelector(".deadline-title");
+
   if (!countdownElem || !barElem) return;
 
   const today = new Date();
-  const end = parseDate(END_DATE_STR);
+  
+  // On récupère tes réglages personnalisés
+  const settings = getSettings();
+  const start = parseDate(settings.startDate);
+  const end = parseDate(settings.endDate);
 
+  // 1. MISE À JOUR DU TITRE (C'est ce qui manquait !)
+  if (titleElem) {
+    // On formate la date en français (ex: "15 juin 2027")
+    const dateStr = end.toLocaleDateString("fr-FR", {
+      day: "numeric", 
+      month: "long", 
+      year: "numeric"
+    });
+    titleElem.textContent = `Date de fin de révisions : ${dateStr}`;
+  }
+
+  // 2. Calcul des jours restants
   const diffMs = end - today;
   const msPerDay = 1000 * 60 * 60 * 24;
   const daysLeft = Math.max(0, Math.ceil(diffMs / msPerDay));
 
   if (daysLeft === 0 && today > end) {
-    countdownElem.textContent =
-      "Les révisions sont censées être terminées (date de fin dépassée).";
+    countdownElem.textContent = "La date de fin est dépassée.";
   } else {
-    countdownElem.textContent = `Il reste ${daysLeft} jours avant la fin des révisions.`;
+    countdownElem.textContent = `Il reste ${daysLeft} jours avant la fin.`;
   }
-
-  // MODIFICATION ICI : On utilise la date fixe START_DATE_STR
-  // au lieu de state.globalStartDate
-  const start = parseDate(START_DATE_STR);
   
+  // 3. Barre de progression
   const totalMs = end - start;
   let elapsedMs = today - start;
   
-  // Si on est avant le début officiel (ex: on est en août 2025), la barre reste à 0
   if (elapsedMs < 0) elapsedMs = 0;
   if (elapsedMs > totalMs) elapsedMs = totalMs;
 
@@ -632,3 +650,100 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnCloseNews) btnCloseNews.addEventListener("click", closeNews);
   if (backdropNews) backdropNews.addEventListener("click", closeNews);
 });
+
+
+// --- GESTION DES PARAMÈTRES (SETTINGS) ---
+
+const STORAGE_KEY_SETTINGS = "suivi_med_settings_v1";
+
+function getSettings() {
+  const defaults = {
+    startDate: START_DATE_STR, // Depuis dataV2.js
+    endDate: END_DATE_STR,     // Depuis dataV2.js
+    offsets: REVIEW_OFFSETS_DAYS.join(", ") // "1, 3, 7..."
+  };
+  
+  const raw = localStorage.getItem(STORAGE_KEY_SETTINGS);
+  if (!raw) return defaults;
+  
+  try {
+    return { ...defaults, ...JSON.parse(raw) };
+  } catch(e) {
+    return defaults;
+  }
+}
+
+function saveSettings(newSettings) {
+  localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(newSettings));
+}
+
+function getOffsetsArray() {
+  const s = getSettings();
+  // Convertit "1, 3, 7" en [1, 3, 7]
+  return s.offsets.split(",")
+    .map(x => parseInt(x.trim(), 10))
+    .filter(x => !isNaN(x) && x > 0)
+    .sort((a,b) => a - b);
+}
+
+// --- RECALCUL INTELLIGENT ---
+
+/**
+ * Recalcule toutes les révisions futures pour tous les chapitres
+ * en se basant sur la date d'apprentissage et les nouveaux offsets.
+ * Préserve l'historique (révisions marquées "faites").
+ */
+function recalculateAllSchedules() {
+  let state = loadState();
+  const offsets = getOffsetsArray();
+  const endDate = parseDate(getSettings().endDate);
+  
+  let countUpdated = 0;
+
+  CHAPITRES.forEach(ch => {
+    const st = state.chapters[ch.id];
+    if (!st || !st.completed || !st.learnedDate) return;
+
+    const learnedDate = parseDate(st.learnedDate);
+    
+    // 1. Sauvegarder les révisions FAITES (historique)
+    const history = st.reviews.filter(r => r.done);
+    
+    // 2. Générer le nouveau planning théorique
+    const newReviews = [];
+    for (let i = 0; i < offsets.length; i++) {
+      const offset = offsets[i];
+      const revDate = addDays(learnedDate, offset);
+      if (revDate > endDate) break;
+      
+      const revDateISO = formatDateISO(revDate);
+      
+      // On cherche si cette révision (par index) a déjà été faite
+      // Note : On essaye de matcher par "index" (ex: la 1ère révision)
+      // Si l'utilisateur change complètement les offsets (ex: J+1, J+3 -> J+2, J+5),
+      // l'historique est conservé "tel quel" pour les index correspondants (la 1ère reste la 1ère).
+      
+      const existing = history.find(h => h.index === (i + 1));
+      
+      if (existing) {
+        // On garde l'ancienne (faite) telle quelle
+        newReviews.push(existing);
+      } else {
+        // C'est une future révision (ou un retard non coché), on met la nouvelle date calculée
+        newReviews.push({
+          index: i + 1,
+          offsetDays: offset,
+          date: revDateISO,
+          done: false
+        });
+      }
+    }
+    
+    // On remplace
+    st.reviews = newReviews;
+    countUpdated++;
+  });
+
+  saveState(state);
+  return countUpdated;
+}
