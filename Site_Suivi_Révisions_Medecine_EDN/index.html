@@ -13,11 +13,18 @@
 <!-- MODAL FEEDBACK -->
 <div id="feedback-modal" class="modal" aria-hidden="true">
   <div class="modal-backdrop" id="feedback-backdrop"></div>
-  <div class="modal-content feedback-content">
+  <div
+    class="modal-content feedback-content"
+    id="feedback-content"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="feedback-title"
+    aria-describedby="feedback-desc"
+    tabindex="-1">
     <button class="modal-close" id="feedback-close">✖</button>
-    
-    <h3>📢 Une idée ? Un bug ?</h3>
-    <p class="modal-desc">Dis-moi tout ! Ton message arrivera directement dans ma boîte mail.</p>
+
+    <h3 id="feedback-title">📢 Une idée ? Un bug ?</h3>
+    <p class="modal-desc" id="feedback-desc">Dis-moi tout ! Ton message arrivera directement dans ma boîte mail.</p>
 
     <!-- FORMULAIRE NETLIFY -->
     <!-- L'attribut name="feedback" est important pour Netlify -->
@@ -26,23 +33,23 @@
       <input type="hidden" name="form-name" value="feedback">
 
       <div class="form-group">
-        <label for="fb-name">Ton nom :</label>
-        <input type="text" id="fb-name" name="name" placeholder="Ex: Marie" required>
+        <label for="fb-name" id="fb-name-label">Ton nom :</label>
+        <input type="text" id="fb-name" name="name" placeholder="Ex: Marie" required aria-labelledby="fb-name-label" aria-describedby="feedback-desc">
       </div>
 
       <div class="form-group">
-        <label for="fb-email">Ton email (pour te répondre) :</label>
-        <input type="email" id="fb-email" name="email" placeholder="marie@example.com" required>
+        <label for="fb-email" id="fb-email-label">Ton email (pour te répondre) :</label>
+        <input type="email" id="fb-email" name="email" placeholder="marie@example.com" required aria-labelledby="fb-email-label" aria-describedby="feedback-desc">
       </div>
 
       <div class="form-group">
-        <label for="fb-message">Message :</label>
-        <textarea id="fb-message" name="message" rows="4" placeholder="J'ai trouvé un bug quand..." required></textarea>
+        <label for="fb-message" id="fb-message-label">Message :</label>
+        <textarea id="fb-message" name="message" rows="4" placeholder="J'ai trouvé un bug quand..." required aria-labelledby="fb-message-label" aria-describedby="feedback-desc"></textarea>
       </div>
 
       <div class="form-group">
-        <label for="fb-file">(facultatif) Pièce jointe (captures d'écrans du problème par exemple) :</label>
-        <input type="file" id="fb-file" name="attachment" accept="image/png, image/jpeg, .pdf">
+        <label for="fb-file" id="fb-file-label">(facultatif) Pièce jointe (captures d'écrans du problème par exemple) :</label>
+        <input type="file" id="fb-file" name="attachment" accept="image/png, image/jpeg, .pdf" aria-labelledby="fb-file-label" aria-describedby="feedback-desc">
       </div>
 
       <button type="submit" class="submit-btn">Envoyer 🚀</button>
@@ -119,7 +126,14 @@
   <!-- Modal infos chapitre / re-révisions -->
   <div id="chapter-modal" class="modal" aria-hidden="true">
     <div class="modal-backdrop" id="modal-backdrop"></div>
-    <div class="modal-content">
+    <div
+      class="modal-content"
+      id="chapter-modal-content"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="chapter-modal-title"
+      aria-describedby="chapter-modal-desc"
+      tabindex="-1">
       <button class="modal-close" id="modal-close">✖</button>
       <div id="modal-body"></div>
     </div>
@@ -128,10 +142,17 @@
   <!-- Mini modal pour choisir la date de 1ère apprentissage -->
   <div id="date-modal" class="mini-modal" aria-hidden="true">
     <div class="mini-modal-backdrop" id="date-modal-backdrop"></div>
-    <div class="mini-modal-content">
-      <h3>Choisir la date de 1<sup>re</sup> apprentissage</h3>
-      <p>Tu peux corriger la date si tu avais déjà vu ce chapitre avant.</p>
-      <input type="date" id="date-modal-input">
+    <div
+      class="mini-modal-content"
+      id="date-modal-content"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="date-modal-title"
+      aria-describedby="date-modal-desc"
+      tabindex="-1">
+      <h3 id="date-modal-title">Choisir la date de 1<sup>re</sup> apprentissage</h3>
+      <p id="date-modal-desc">Tu peux corriger la date si tu avais déjà vu ce chapitre avant.</p>
+      <input type="date" id="date-modal-input" aria-describedby="date-modal-desc" aria-labelledby="date-modal-title">
       <div class="mini-modal-buttons">
         <button id="date-modal-cancel">Annuler</button>
         <button id="date-modal-ok">Valider</button>
@@ -149,11 +170,18 @@
   <!-- MODAL NOUVEAUTÉS -->
 <div id="news-modal" class="modal" aria-hidden="true">
   <div class="modal-backdrop" id="news-backdrop"></div>
-  <div class="modal-content news-content">
+  <div
+    class="modal-content news-content"
+    id="news-content"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="news-title"
+    aria-describedby="news-desc"
+    tabindex="-1">
     <button class="modal-close" id="news-close">✖</button>
-    
-    <h3>🚀 Quoi de neuf ?</h3>
-    <p class="modal-desc">Les dernières améliorations du site.</p>
+
+    <h3 id="news-title">🚀 Quoi de neuf ?</h3>
+    <p class="modal-desc" id="news-desc">Les dernières améliorations du site.</p>
 
     <div class="changelog-list">
       
