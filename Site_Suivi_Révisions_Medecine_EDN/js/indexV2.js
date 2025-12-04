@@ -1,8 +1,9 @@
 // js/index.js
 
 document.addEventListener("DOMContentLoaded", () => {
+  let settings = loadSettings();
   let state = loadState();
-  updateDeadlineBox(state);
+  updateDeadlineBox(state, settings);
 
   const liste = document.getElementById("liste-chapitres");
   const searchInput = document.getElementById("search-input");
@@ -18,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (motivationBtn && motivationBox) {
     motivationBtn.addEventListener("click", () => {
       state = loadState();
-      const msg = buildMotivationMessage(state);
+      const msg = buildMotivationMessage(state, settings);
       motivationBox.textContent = msg;
       motivationBox.style.display = "block";
     });
@@ -91,6 +92,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalBody = document.getElementById("modal-body");
   const modalContent = document.getElementById("chapter-modal-content");
 
+  const settingsBtn = document.getElementById("btn-settings");
+  const settingsModal = document.getElementById("settings-modal");
+  const settingsBackdrop = document.getElementById("settings-backdrop");
+  const settingsCloseBtn = document.getElementById("settings-close");
+  const settingsContent = document.getElementById("settings-content");
+  const settingsStartInput = document.getElementById("settings-start-date");
+  const settingsEndInput = document.getElementById("settings-end-date");
+  const settingsOffsetsInput = document.getElementById("settings-offsets");
+  const settingsApplyBtn = document.getElementById("settings-apply");
+  const settingsCancelBtn = document.getElementById("settings-cancel");
+
   const chapterModalController = createModalController({
     modal,
     closeButton: modalCloseBtn,
@@ -98,6 +110,114 @@ document.addEventListener("DOMContentLoaded", () => {
     focusContainer: modalContent,
     initialFocusSelector: "#modal-close"
   });
+
+  const settingsModalController = createModalController({
+    modal: settingsModal,
+    closeButton: settingsCloseBtn,
+    backdrop: settingsBackdrop,
+    focusContainer: settingsContent,
+    initialFocusSelector: "#settings-start-date"
+  });
+
+  function fillSettingsForm() {
+    settings = loadSettings();
+    if (settingsStartInput) settingsStartInput.value = settings.startDate;
+    if (settingsEndInput) settingsEndInput.value = settings.endDate;
+    if (settingsOffsetsInput) {
+      settingsOffsetsInput.value = sanitizeOffsets(settings.reviewOffsets).join(", ");
+    }
+  }
+
+  function parseOffsetsInput(rawValue) {
+    const tokens = (rawValue || "")
+      .split(/[;,\s]+/)
+      .filter(Boolean)
+      .map(Number);
+    return sanitizeOffsets(tokens);
+  }
+
+  function recalculateAllChapters(currentState, newSettings) {
+    const nextState = JSON.parse(JSON.stringify(currentState));
+    nextState.globalStartDate = newSettings.startDate;
+
+    Object.values(nextState.chapters).forEach((ch) => {
+      if (!ch.completed || !ch.learnedDate) {
+        ch.reviews = [];
+        return;
+      }
+
+      const previousDone = new Map();
+      if (Array.isArray(ch.reviews)) {
+        ch.reviews.forEach((review) => {
+          previousDone.set(review.offsetDays, !!review.done);
+        });
+      }
+
+      const regenerated = generateReviewSchedule(ch.learnedDate, newSettings);
+      ch.reviews = regenerated.map((rev) => ({
+        ...rev,
+        done: previousDone.get(rev.offsetDays) || false
+      }));
+    });
+
+    return nextState;
+  }
+
+  if (settingsBtn && settingsModalController) {
+    settingsBtn.addEventListener("click", () => {
+      fillSettingsForm();
+      settingsModalController.open();
+    });
+  }
+
+  if (settingsCancelBtn) {
+    settingsCancelBtn.addEventListener("click", () => settingsModalController.close());
+  }
+
+  if (settingsApplyBtn) {
+    settingsApplyBtn.addEventListener("click", () => {
+      const startDate = settingsStartInput && settingsStartInput.value
+        ? settingsStartInput.value
+        : settings.startDate;
+      const endDate = settingsEndInput && settingsEndInput.value
+        ? settingsEndInput.value
+        : settings.endDate;
+      const reviewOffsets = parseOffsetsInput(settingsOffsetsInput ? settingsOffsetsInput.value : "");
+
+      if (parseDate(startDate) > parseDate(endDate)) {
+        alert("La date de début doit être avant la date de fin.");
+        return;
+      }
+
+      const confirmReset = window.confirm(
+        "⚠️ Ce recalcul va régénérer toutes les re-révisions selon les nouveaux paramètres.\n" +
+        "Les cases cochées peuvent être perdues si les dates changent.\n\n" +
+        "Pense à exporter ta progression avec le bouton 'Sauvegarder la progression' avant de continuer.\n\n" +
+        "Continuer ?"
+      );
+
+      if (!confirmReset) return;
+
+      const backupState = loadState();
+      saveBackupState(backupState);
+
+      settings = { startDate, endDate, reviewOffsets };
+      saveSettings(settings);
+
+      const updatedState = recalculateAllChapters(backupState, settings);
+      state = updatedState;
+      saveState(state);
+
+      construireListe();
+      majProgression();
+      if (typeof applyFilters === "function") {
+        applyFilters();
+      }
+      updateDeadlineBox(state, settings);
+      showToast("Paramètres appliqués et re-révisions recalculées ✅");
+      settingsModalController.close();
+    });
+  }
 
   function openChapterModal(chapterId) {
     state = loadState();
@@ -527,7 +647,7 @@ btnSave.addEventListener("click", async () => { // Note l'ajout de "async" ici
 
         construireListe();
         majProgression();
-        updateDeadlineBox(state);
+        updateDeadlineBox(state, settings);
         showToast("Progression chargée avec succès !");
       } catch (err) {
         console.error(err);

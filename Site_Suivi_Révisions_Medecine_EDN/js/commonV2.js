@@ -39,6 +39,69 @@ function todayISO() {
 
 const STORAGE_KEY_STATE = "suivi_med_state_v1";
 const STORAGE_KEY_BACKUP = "suivi_med_state_backup";
+const STORAGE_KEY_SETTINGS = "suivi_med_settings_v1";
+
+function getDefaultSettings() {
+  return {
+    startDate: START_DATE_STR,
+    endDate: END_DATE_STR,
+    reviewOffsets: REVIEW_OFFSETS_DAYS
+  };
+}
+
+function sanitizeOffsets(offsets) {
+  if (!Array.isArray(offsets)) return REVIEW_OFFSETS_DAYS;
+
+  const clean = offsets
+    .map(Number)
+    .filter(n => Number.isFinite(n) && n >= 0);
+
+  const uniqueSorted = Array.from(new Set(clean)).sort((a, b) => a - b);
+
+  return uniqueSorted.length > 0 ? uniqueSorted : REVIEW_OFFSETS_DAYS;
+}
+
+function loadSettings() {
+  const defaults = getDefaultSettings();
+  const raw = localStorage.getItem(STORAGE_KEY_SETTINGS);
+
+  if (!raw) {
+    return defaults;
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    const startDate = typeof parsed.startDate === "string" && parsed.startDate
+      ? parsed.startDate
+      : defaults.startDate;
+    const endDate = typeof parsed.endDate === "string" && parsed.endDate
+      ? parsed.endDate
+      : defaults.endDate;
+    const reviewOffsets = sanitizeOffsets(parsed.reviewOffsets);
+
+    const parsedStart = parseDate(startDate);
+    const parsedEnd = parseDate(endDate);
+
+    if (isNaN(parsedStart.getTime()) || isNaN(parsedEnd.getTime()) || parsedStart > parsedEnd) {
+      return defaults;
+    }
+
+    return { startDate, endDate, reviewOffsets };
+  } catch (error) {
+    console.warn("Paramètres invalides en stockage, retour aux valeurs par défaut", error);
+    return defaults;
+  }
+}
+
+function saveSettings(settings) {
+  if (!settings) return;
+  const safeSettings = {
+    startDate: settings.startDate,
+    endDate: settings.endDate,
+    reviewOffsets: sanitizeOffsets(settings.reviewOffsets)
+  };
+  localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(safeSettings));
+}
 
 function initEmptyState() {
   const state = {
@@ -136,13 +199,13 @@ function saveBackupState(state) {
 
 // --- Génération des re-révisions pour un chapitre ---
 
-function generateReviewSchedule(learnedDateStr) {
+function generateReviewSchedule(learnedDateStr, settings = loadSettings()) {
   const learnedDate = parseDate(learnedDateStr);
-  const endDate = parseDate(END_DATE_STR);
+  const endDate = parseDate(settings.endDate);
 
   const reviews = [];
-  for (let i = 0; i < REVIEW_OFFSETS_DAYS.length; i++) {
-    const offset = REVIEW_OFFSETS_DAYS[i];
+  for (let i = 0; i < settings.reviewOffsets.length; i++) {
+    const offset = settings.reviewOffsets[i];
     const reviewDate = addDays(learnedDate, offset);
     if (reviewDate > endDate) {
       break;
@@ -160,13 +223,14 @@ function generateReviewSchedule(learnedDateStr) {
 
 // --- Bloc "date de fin de révisions" ---
 
-function updateDeadlineBox(state) {
+function updateDeadlineBox(state, settings = loadSettings()) {
   const countdownElem = document.getElementById("deadline-countdown");
   const barElem = document.getElementById("deadline-progress-bar");
+  const titleElem = document.getElementById("deadline-title");
   if (!countdownElem || !barElem) return;
 
   const today = new Date();
-  const end = parseDate(END_DATE_STR);
+  const end = parseDate(settings.endDate);
 
   const diffMs = end - today;
   const msPerDay = 1000 * 60 * 60 * 24;
@@ -179,9 +243,13 @@ function updateDeadlineBox(state) {
     countdownElem.textContent = `Il reste ${daysLeft} jours avant la fin des révisions.`;
   }
 
+  if (titleElem) {
+    titleElem.textContent = `Date de fin de révisions : ${formatDateFr(settings.endDate)}`;
+  }
+
   // MODIFICATION ICI : On utilise la date fixe START_DATE_STR
   // au lieu de state.globalStartDate
-  const start = parseDate(START_DATE_STR);
+  const start = parseDate(settings.startDate);
   
   const totalMs = end - start;
   let elapsedMs = today - start;
@@ -335,22 +403,22 @@ function createModalController(options) {
 
 // --- Stats & phrases de motivation ---
 
-function getDaysLeft() {
+function getDaysLeft(settings = loadSettings()) {
   const today = new Date();
-  const end = parseDate(END_DATE_STR);
+  const end = parseDate(settings.endDate);
   const diffMs = end - today;
   const msPerDay = 1000 * 60 * 60 * 24;
   return Math.max(0, Math.ceil(diffMs / msPerDay));
 }
 
-function buildMotivationMessage(state) {
+function buildMotivationMessage(state, settings = loadSettings()) {
   const total = CHAPITRES.length;
   let faits = 0;
   CHAPITRES.forEach(ch => {
     if (state.chapters[ch.id] && state.chapters[ch.id].completed) faits++;
   });
 
-  const jours = getDaysLeft();
+  const jours = getDaysLeft(settings);
   const pourcent = total > 0 ? (faits / total) * 100 : 0;
 
   const templates = [
