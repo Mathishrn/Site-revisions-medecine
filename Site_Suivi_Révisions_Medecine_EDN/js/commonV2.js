@@ -205,6 +205,128 @@ function showToast(message) {
   }, 5000);
 }
 
+// --- Accessibilité des modales ---
+
+const FOCUSABLE_SELECTORS = "a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex='-1'])";
+
+function getFocusableElements(container) {
+  return Array.from(container.querySelectorAll(FOCUSABLE_SELECTORS)).filter((el) => {
+    return !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true" && el.tabIndex !== -1;
+  });
+}
+
+function createModalController(options) {
+  const {
+    modal,
+    openButton = null,
+    closeButton = null,
+    backdrop = null,
+    focusContainer = null,
+    initialFocusSelector = null,
+    onOpen = null,
+    onClose = null,
+    onEscape = null
+  } = options;
+
+  if (!modal) return { open: () => {}, close: () => {} };
+
+  const focusScope = focusContainer || modal;
+  let previousFocus = null;
+
+  function focusFirstElement() {
+    if (initialFocusSelector) {
+      const target = modal.querySelector(initialFocusSelector);
+      if (target && typeof target.focus === "function") {
+        target.focus();
+        return;
+      }
+    }
+
+    const focusables = getFocusableElements(focusScope);
+    if (focusables.length > 0 && typeof focusables[0].focus === "function") {
+      focusables[0].focus();
+    }
+  }
+
+  function trapTabKey(e) {
+    if (e.key !== "Tab") return;
+
+    const focusables = getFocusableElements(focusScope);
+    if (focusables.length === 0) return;
+
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const current = document.activeElement;
+
+    if (e.shiftKey) {
+      if (current === first || !focusables.includes(current)) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (current === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+
+  function handleKeydown(e) {
+    if (e.key === "Escape") {
+      if (typeof onEscape === "function") {
+        onEscape(close);
+      } else {
+        close();
+      }
+      return;
+    }
+
+    trapTabKey(e);
+  }
+
+  function open() {
+    previousFocus = document.activeElement;
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+
+    if (typeof onOpen === "function") {
+      onOpen();
+    }
+
+    document.addEventListener("keydown", handleKeydown);
+    focusFirstElement();
+  }
+
+  function close() {
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden", "true");
+    document.removeEventListener("keydown", handleKeydown);
+
+    if (typeof onClose === "function") {
+      onClose();
+    }
+
+    if (previousFocus && typeof previousFocus.focus === "function") {
+      previousFocus.focus();
+    }
+    previousFocus = null;
+  }
+
+  if (openButton) {
+    openButton.addEventListener("click", open);
+  }
+
+  if (closeButton) {
+    closeButton.addEventListener("click", close);
+  }
+
+  if (backdrop) {
+    backdrop.addEventListener("click", close);
+  }
+
+  return { open, close };
+}
+
 // --- Stats & phrases de motivation ---
 
 function getDaysLeft() {
@@ -550,23 +672,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnClose = document.getElementById("feedback-close");
   const backdrop = document.getElementById("feedback-backdrop");
   const form = document.getElementById("feedback-form");
+  const focusContainer = document.getElementById("feedback-content");
 
-  if (!btnOpen || !modalFB) return;
+  if (!btnOpen || !modalFB || !focusContainer) return;
 
-  // Ouvrir
-  btnOpen.addEventListener("click", () => {
-    modalFB.classList.add("open");
-    modalFB.setAttribute("aria-hidden", "false");
+  const feedbackController = createModalController({
+    modal: modalFB,
+    openButton: btnOpen,
+    closeButton: btnClose,
+    backdrop,
+    focusContainer,
+    initialFocusSelector: "#fb-name"
   });
 
-  // Fermer
-  function closeFeedback() {
-    modalFB.classList.remove("open");
-    modalFB.setAttribute("aria-hidden", "true");
-  }
-
-  if (btnClose) btnClose.addEventListener("click", closeFeedback);
-  if (backdrop) backdrop.addEventListener("click", closeFeedback);
+  const closeFeedback = feedbackController.close;
 
   // Soumission du formulaire
   if (form) {
@@ -615,20 +734,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalNews = document.getElementById("news-modal");
   const btnCloseNews = document.getElementById("news-close");
   const backdropNews = document.getElementById("news-backdrop");
+  const focusContainer = document.getElementById("news-content");
 
-  if (!btnNews || !modalNews) return;
+  if (!btnNews || !modalNews || !focusContainer) return;
 
-  function openNews() {
-    modalNews.classList.add("open");
-    modalNews.setAttribute("aria-hidden", "false");
-  }
-
-  function closeNews() {
-    modalNews.classList.remove("open");
-    modalNews.setAttribute("aria-hidden", "true");
-  }
-
-  btnNews.addEventListener("click", openNews);
-  if (btnCloseNews) btnCloseNews.addEventListener("click", closeNews);
-  if (backdropNews) backdropNews.addEventListener("click", closeNews);
+  createModalController({
+    modal: modalNews,
+    openButton: btnNews,
+    closeButton: btnCloseNews,
+    backdrop: backdropNews,
+    focusContainer,
+    initialFocusSelector: "#news-close"
+  });
 });

@@ -30,8 +30,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnOk = document.getElementById("date-modal-ok");
     const btnCancel = document.getElementById("date-modal-cancel");
     const backdrop = document.getElementById("date-modal-backdrop");
+    const dateModalContent = document.getElementById("date-modal-content");
 
-    if (!dateModal || !dateInput || !btnOk || !btnCancel || !backdrop) {
+    if (!dateModal || !dateInput || !btnOk || !btnCancel || !backdrop || !dateModalContent) {
       return todayISO();
     }
 
@@ -39,16 +40,21 @@ document.addEventListener("DOMContentLoaded", () => {
       const todayStr = todayISO();
       dateInput.value = previousDateStr || todayStr;
 
-      dateModal.classList.add("open");
-      dateModal.setAttribute("aria-hidden", "false");
+      const dateController = createModalController({
+        modal: dateModal,
+        focusContainer: dateModalContent,
+        initialFocusSelector: "#date-modal-input",
+        onEscape: () => onCancel()
+      });
+
+      dateController.open();
 
       function closeModal() {
-        dateModal.classList.remove("open");
-        dateModal.setAttribute("aria-hidden", "true");
+        dateController.close();
         btnOk.removeEventListener("click", onOk);
         btnCancel.removeEventListener("click", onCancel);
         backdrop.removeEventListener("click", onCancel);
-        document.removeEventListener("keydown", onKeyDown);
+        dateModal.removeEventListener("keydown", onKeyDown);
       }
 
       function onOk() {
@@ -67,9 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       function onKeyDown(e) {
-        if (e.key === "Escape") {
-          onCancel();
-        }
         if (e.key === "Enter") {
           onOk();
         }
@@ -78,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnOk.addEventListener("click", onOk);
       btnCancel.addEventListener("click", onCancel);
       backdrop.addEventListener("click", onCancel);
-      document.addEventListener("keydown", onKeyDown);
+      dateModal.addEventListener("keydown", onKeyDown);
     });
   }
 
@@ -86,11 +89,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalBackdrop = document.getElementById("modal-backdrop");
   const modalCloseBtn = document.getElementById("modal-close");
   const modalBody = document.getElementById("modal-body");
+  const modalContent = document.getElementById("chapter-modal-content");
+
+  const chapterModalController = createModalController({
+    modal,
+    closeButton: modalCloseBtn,
+    backdrop: modalBackdrop,
+    focusContainer: modalContent,
+    initialFocusSelector: "#modal-close"
+  });
 
   function openChapterModal(chapterId) {
     state = loadState();
     const ch = CHAPITRES.find(c => c.id === chapterId);
-    if (!ch) return;
+    if (!ch || !modalContent) return;
     const st = state.chapters[chapterId];
 
     modalBody.innerHTML = "";
@@ -100,10 +112,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const title = document.createElement("h3");
     title.className = "modal-title";
+    title.id = "chapter-modal-title";
     title.textContent = `${ch.id}. ${ch.titre}`;
 
     const desc = document.createElement("p");
     desc.className = "modal-desc";
+    desc.id = "chapter-modal-desc";
     desc.textContent = ch.description || "";
 
     header.appendChild(title);
@@ -219,22 +233,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     modalBody.appendChild(list);
 
-    modal.classList.add("open");
-    modal.setAttribute("aria-hidden", "false");
+    chapterModalController.open();
   }
 
   function closeChapterModal() {
-    modal.classList.remove("open");
-    modal.setAttribute("aria-hidden", "true");
+    chapterModalController.close();
   }
 
   modalBackdrop.addEventListener("click", closeChapterModal);
   modalCloseBtn.addEventListener("click", closeChapterModal);
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && modal.classList.contains("open")) {
-      closeChapterModal();
-    }
-  });
 
   const liParId = {};
   const checkboxParId = {};
