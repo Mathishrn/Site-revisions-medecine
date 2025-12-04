@@ -28,8 +28,8 @@ html {
 
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #f5f6fa;
-  color: #222;
+  background: var(--color-background);
+  color: var(--color-text);
   min-height: 100vh;
 }
 
@@ -41,8 +41,8 @@ a {
 /* --------- Header --------- */
 
 .header {
-  background: #2f7e5f;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
   padding: 16px 18px 18px;
 }
 
@@ -69,14 +69,14 @@ a {
 
 .nav-link {
   padding: 8px 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(255,255,255,0.14);
   font-size: 15px;
 }
 
 .nav-link.active {
-  background: #fff;
-  color: #2f7e5f;
+  background: var(--color-primary-contrast);
+  color: var(--color-primary);
   font-weight: 600;
 }
 
@@ -187,7 +187,7 @@ a {
   max-width: 1400px;
 }
 
-/* --------- Progression globale --------- */
+/* --------- Composant : Barre de progression --------- */
 
 .progress-section {
   margin-bottom: 20px;
@@ -196,15 +196,15 @@ a {
 .progress-bar-background {
   width: 100%;
   height: 22px;
-  background: #e3e5e9;
-  border-radius: 999px;
+  background: var(--color-border);
+  border-radius: var(--radius-pill);
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
   width: 0;
-  background: linear-gradient(90deg, #f46b45, #76b852);
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-strong));
   transition: width 0.25s ease-out;
 }
 
@@ -277,7 +277,7 @@ button:active {
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
-/* --------- Liste chapitres --------- */
+/* --------- Composant : Cartes chapitre --------- */
 
 .chapters-list {
   list-style: none;
@@ -290,17 +290,19 @@ button:active {
 }
 
 .chapter-item {
-  background: #ffffff;
-  border-radius: 8px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   display: flex;
   align-items: flex-start;
   gap: 8px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border: 1px solid var(--color-border);
 }
 
 .chapter-item.completed {
-  background: #e7f7ed;
+  background: var(--color-success-bg);
+  border-color: transparent;
 }
 
 .chapter-checkbox {
@@ -327,7 +329,7 @@ button:active {
 .chapter-info-btn {
   padding: 4px 8px;
   font-size: 11px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: #e3f2fd;
   color: #1e88e5;
   border: none;
@@ -341,7 +343,7 @@ button:active {
 
 .chapter-subtitle {
   font-size: 13px;
-  color: #555;
+  color: var(--color-text-muted);
 }
 
 /* --------- Sections planning --------- */
@@ -703,7 +705,7 @@ button:active {
   padding-left: 10px;
 }
 
-/* --------- Modal chapitre --------- */
+/* --------- Composant : Modales --------- */
 
 .modal {
   position: fixed;
@@ -726,14 +728,15 @@ button:active {
 
 .modal-content {
   position: relative;
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 16px;
   max-width: 560px;
   width: 95%;
   max-height: 90vh;
   overflow: auto;
   padding: 20px 18px 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  box-shadow: var(--shadow-strong);
+  border: 1px solid var(--color-border);
 }
 
 .modal-close {
@@ -741,13 +744,13 @@ button:active {
   right: 10px;
   top: 8px;
   background: transparent;
-  color: #333;
+  color: var(--color-text);
   box-shadow: none;
   font-size: 18px;
 }
 
 .modal-close:hover {
-  background: #eee;
+  background: var(--color-surface-alt);
 }
 
 .modal-header-block {
@@ -762,12 +765,12 @@ button:active {
 
 .modal-desc {
   font-size: 14px;
-  color: #444;
+  color: var(--color-text-muted);
 }
 
 .modal-meta {
   font-size: 13px;
-  color: #555;
+  color: var(--color-text-muted);
   margin: 10px 0 6px;
 }
 
@@ -787,14 +790,14 @@ button:active {
 .modal-progress-bg {
   width: 100%;
   height: 10px;
-  border-radius: 999px;
-  background: #e0e0e0;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
   overflow: hidden;
 }
 
 .modal-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #66bb6a, #2e7d32);
+  background: linear-gradient(90deg, #66bb6a, var(--color-success));
 }
 
 .modal-reviews-list {
@@ -811,8 +814,8 @@ button:active {
   gap: 8px;
   align-items: flex-start;
   padding: 8px 10px;
-  background: #f5f5f5;
-  border-radius: 8px;
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
 }
 
 .modal-review-item input {
@@ -1362,125 +1365,125 @@ button:active {
 
 /* --------- DARK MODE (Mode Sombre) --------- */
 
-body.dark-mode {
-  background: #121212;
-  color: #e0e0e0;
+body[data-theme="dark"] {
+  background: var(--color-background);
+  color: var(--color-text);
 }
 
-body.dark-mode .header {
-  background: #1b5e45;
-  color: #eee;
+body[data-theme="dark"] .header {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
 }
 
-body.dark-mode .nav-link {
+body[data-theme="dark"] .nav-link {
   background: rgba(255,255,255,0.1);
-  color: #ddd;
+  color: var(--color-text);
 }
-body.dark-mode .nav-link.active {
+body[data-theme="dark"] .nav-link.active {
   background: #333;
-  color: #4db6ac;
+  color: var(--color-primary);
 }
 
-body.dark-mode .chapter-item,
-body.dark-mode .stat-card,
-body.dark-mode .stat-box,
-body.dark-mode .week-day,
-body.dark-mode .month-view,
-body.dark-mode .review-item,
-body.dark-mode .modal-content,
-body.dark-mode .mini-modal-content,
-body.dark-mode .subject-header,
-body.dark-mode .subject-content,
-body.dark-mode .podium-card,
-body.dark-mode .motivation-box {
-  background: #1e1e1e;
-  color: #e0e0e0;
-  border-color: #333;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+body[data-theme="dark"] .chapter-item,
+body[data-theme="dark"] .stat-card,
+body[data-theme="dark"] .stat-box,
+body[data-theme="dark"] .week-day,
+body[data-theme="dark"] .month-view,
+body[data-theme="dark"] .review-item,
+body[data-theme="dark"] .modal-content,
+body[data-theme="dark"] .mini-modal-content,
+body[data-theme="dark"] .subject-header,
+body[data-theme="dark"] .subject-content,
+body[data-theme="dark"] .podium-card,
+body[data-theme="dark"] .motivation-box {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-soft);
 }
 
-body.dark-mode h1, 
-body.dark-mode h2, 
-body.dark-mode h3 {
-  color: #f5f5f5;
+body[data-theme="dark"] h1,
+body[data-theme="dark"] h2,
+body[data-theme="dark"] h3 {
+  color: var(--color-text);
 }
 
-body.dark-mode .chapter-subtitle,
-body.dark-mode .section-note,
-body.dark-mode .modal-desc,
-body.dark-mode .modal-meta,
-body.dark-mode .review-meta,
-body.dark-mode .stat-info h3,
-body.dark-mode .chart-desc,
-body.dark-mode .subject-count {
-  color: #aaa;
+body[data-theme="dark"] .chapter-subtitle,
+body[data-theme="dark"] .section-note,
+body[data-theme="dark"] .modal-desc,
+body[data-theme="dark"] .modal-meta,
+body[data-theme="dark"] .review-meta,
+body[data-theme="dark"] .stat-info h3,
+body[data-theme="dark"] .chart-desc,
+body[data-theme="dark"] .subject-count {
+  color: var(--color-text-muted);
 }
 
-body.dark-mode input[type="text"],
-body.dark-mode input[type="number"],
-body.dark-mode input[type="date"] {
-  background: #2c2c2c;
-  border: 1px solid #444;
-  color: #fff;
+body[data-theme="dark"] input[type="text"],
+body[data-theme="dark"] input[type="number"],
+body[data-theme="dark"] input[type="date"] {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
-body.dark-mode button.nav-button,
-body.dark-mode button#btn-save,
-body.dark-mode button#btn-load, 
-body.dark-mode .chapter-info-btn,
-body.dark-mode .review-chapter-link {
+body[data-theme="dark"] button.nav-button,
+body[data-theme="dark"] button#btn-save,
+body[data-theme="dark"] button#btn-load,
+body[data-theme="dark"] .chapter-info-btn,
+body[data-theme="dark"] .review-chapter-link {
   background: #333;
-  border: 1px solid #555;
-  color: #4db6ac;
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
 }
 
-body.dark-mode .chapter-item.completed {
-  background: #1e3329;
-  border: 1px solid #2f7e5f;
+body[data-theme="dark"] .chapter-item.completed {
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-primary);
 }
 
-body.dark-mode .week-day.today,
-body.dark-mode .month-grid td.today {
+body[data-theme="dark"] .week-day.today,
+body[data-theme="dark"] .month-grid td.today {
   background: #263238;
-  border-color: #4db6ac;
+  border-color: var(--color-primary);
 }
 
-body.dark-mode .month-grid th {
+body[data-theme="dark"] .month-grid th {
   background: #333;
-  color: #ddd;
-  border-color: #444;
+  color: var(--color-text);
+  border-color: var(--color-border);
 }
-body.dark-mode .month-grid td {
-  border-color: #444;
+body[data-theme="dark"] .month-grid td {
+  border-color: var(--color-border);
 }
 
-body.dark-mode .review-item.done,
-body.dark-mode .week-review.done a,
-body.dark-mode .month-review.done a {
+body[data-theme="dark"] .review-item.done,
+body[data-theme="dark"] .week-review.done a,
+body[data-theme="dark"] .month-review.done a {
   background: #1b3a28;
   color: #a5d6a7;
-  border-left-color: #2e7d32;
+  border-left-color: var(--color-success);
 }
 
-body.dark-mode .review-item.late,
-body.dark-mode .review-item.failed {
+body[data-theme="dark"] .review-item.late,
+body[data-theme="dark"] .review-item.failed {
   background: #3e2723;
-  border-left-color: #c62828;
+  border-left-color: var(--color-danger);
 }
-body.dark-mode .review-item.late .review-date {
+body[data-theme="dark"] .review-item.late .review-date {
   color: #ef9a9a;
 }
 
-body.dark-mode .stat-icon {
+body[data-theme="dark"] .stat-icon {
   background: #333;
 }
-body.dark-mode .stat-value {
-  color: #4db6ac;
+body[data-theme="dark"] .stat-value {
+  color: var(--color-primary);
 }
-body.dark-mode .subject-progress-bg {
+body[data-theme="dark"] .subject-progress-bg {
   background: #333;
 }
-body.dark-mode .podium-fill {
+body[data-theme="dark"] .podium-fill {
   opacity: 0.3;
 }
 

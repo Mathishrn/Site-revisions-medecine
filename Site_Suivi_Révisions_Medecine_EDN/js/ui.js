@@ -250,18 +250,21 @@ function initDarkMode() {
   const btn = document.getElementById("btn-theme-toggle");
   const savedTheme = localStorage.getItem("theme_preference");
 
-  if (savedTheme === "dark") {
-    document.body.classList.add("dark-mode");
-    if (btn) btn.textContent = "☀️";
-  }
+  const applyTheme = (theme) => {
+    const safeTheme = theme === "dark" ? "dark" : "light";
+    document.body.setAttribute("data-theme", safeTheme);
+    if (btn) btn.textContent = safeTheme === "dark" ? "Mode clair" : "Mode sombre";
+  };
+
+  applyTheme(savedTheme === "dark" ? "dark" : "light");
 
   if (btn) {
     btn.addEventListener("click", () => {
-      document.body.classList.toggle("dark-mode");
+      const currentTheme = document.body.getAttribute("data-theme") === "dark" ? "dark" : "light";
+      const nextTheme = currentTheme === "dark" ? "light" : "dark";
 
-      const isDark = document.body.classList.contains("dark-mode");
-      localStorage.setItem("theme_preference", isDark ? "dark" : "light");
-      btn.textContent = isDark ? "☀️" : "🌙";
+      applyTheme(nextTheme);
+      localStorage.setItem("theme_preference", nextTheme);
     });
   }
 }
