@@ -38,6 +38,7 @@ function todayISO() {
 // --- Gestion du stockage global ---
 
 const STORAGE_KEY_STATE = "suivi_med_state_v1";
+const STORAGE_KEY_BACKUP = "suivi_med_state_backup";
 
 function initEmptyState() {
   const state = {
@@ -126,6 +127,11 @@ function loadState() {
 
 function saveState(state) {
   localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(state));
+}
+
+function saveBackupState(state) {
+  if (!state) return;
+  localStorage.setItem(STORAGE_KEY_BACKUP, JSON.stringify(state));
 }
 
 // --- Génération des re-révisions pour un chapitre ---

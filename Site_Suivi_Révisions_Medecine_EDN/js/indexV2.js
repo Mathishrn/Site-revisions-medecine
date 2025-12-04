@@ -500,24 +500,106 @@ btnSave.addEventListener("click", async () => { // Note l'ajout de "async" ici
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
-        if (!data.state || !data.state.chapters) {
-          alert("Fichier de progression invalide.");
+        const validation = validateImportedState(data);
+
+        if (!validation.ok) {
+          showToast(`Import impossible : ${validation.message}`);
           return;
         }
-        state = mergeWithCurrentChapitres(data.state);
+
+        const { state: importedState, chaptersCount } = validation;
+
+        const confirmation = window.confirm(
+          "Vous êtes sur le point de remplacer votre progression actuelle.\n\n" +
+          `Chapitres détectés : ${chaptersCount}\n` +
+          `Date de début : ${formatDateFr(importedState.globalStartDate)}\n\n` +
+          "Une copie de secours sera sauvegardée avant l'import. Continuer ?"
+        );
+
+        if (!confirmation) {
+          return;
+        }
+
+        const backupState = loadState();
+        saveBackupState(backupState);
+
+        state = mergeWithCurrentChapitres(importedState);
         saveState(state);
 
         construireListe();
         majProgression();
         updateDeadlineBox(state);
-        alert("Progression chargée avec succès !");
+        showToast("Progression chargée avec succès !");
       } catch (err) {
         console.error(err);
-        alert("Erreur lors de la lecture du fichier.");
+        showToast("Erreur lors de la lecture du fichier.");
       }
     };
     reader.readAsText(file);
   });
+
+  function validateImportedState(payload) {
+    if (!payload || typeof payload !== "object") {
+      return { ok: false, message: "Le fichier ne contient pas d'objet JSON valide." };
+    }
+
+    const importedState = payload.state || payload;
+
+    if (!importedState || typeof importedState !== "object") {
+      return { ok: false, message: "Structure 'state' manquante." };
+    }
+
+    const { globalStartDate = todayISO(), chapters } = importedState;
+
+    if (globalStartDate && typeof globalStartDate !== "string") {
+      return { ok: false, message: "La date de début doit être une chaîne ISO (yyyy-mm-dd)." };
+    }
+
+    if (!chapters || typeof chapters !== "object") {
+      return { ok: false, message: "Champs 'chapters' manquant ou invalide." };
+    }
+
+    const chapterEntries = Object.entries(chapters);
+    for (const [id, ch] of chapterEntries) {
+      if (!ch || typeof ch !== "object") {
+        return { ok: false, message: `Chapitre ${id} invalide.` };
+      }
+
+      if (typeof ch.completed !== "boolean") {
+        return { ok: false, message: `Le champ 'completed' du chapitre ${id} doit être un booléen.` };
+      }
+
+      if (ch.learnedDate !== null && typeof ch.learnedDate !== "string") {
+        return { ok: false, message: `Le champ 'learnedDate' du chapitre ${id} doit être une date ISO ou null.` };
+      }
+
+      if (!Array.isArray(ch.reviews)) {
+        return { ok: false, message: `Le champ 'reviews' du chapitre ${id} doit être une liste.` };
+      }
+
+      for (const review of ch.reviews) {
+        if (!review || typeof review !== "object") {
+          return { ok: false, message: `Une re-révision du chapitre ${id} est invalide.` };
+        }
+
+        const hasValidTypes =
+          typeof review.index === "number" &&
+          typeof review.offsetDays === "number" &&
+          typeof review.date === "string" &&
+          typeof review.done === "boolean";
+
+        if (!hasValidTypes) {
+          return { ok: false, message: `Les re-révisions du chapitre ${id} doivent contenir index, offsetDays, date et done avec les bons types.` };
+        }
+      }
+    }
+
+    return {
+      ok: true,
+      state: { globalStartDate, chapters },
+      chaptersCount: chapterEntries.length
+    };
+  }
 
   function mergeWithCurrentChapitres(oldState) {
     const newState = {
