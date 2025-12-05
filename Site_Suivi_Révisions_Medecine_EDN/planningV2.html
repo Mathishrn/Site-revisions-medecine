@@ -54,11 +54,15 @@
 <body>
   <header class="header">
     <div class="header-top">
-      <h1>📆 Planning de re-révisions</h1>
+      <div class="header-title-group">
+        <h1>📆 Planning</h1>
+      </div>
+
       <button id="btn-theme-toggle" class="theme-toggle-btn" title="Mode sombre">🌙</button>
       <button id="btn-news" class="theme-toggle-btn2" title="Nouveautés">
-  <span>🔔</span> Nouveautés
-</button>
+        <span>🔔</span> Nouveautés
+      </button>
+
       <nav class="main-nav">
         <a href="index.html" class="nav-link">Suivi général</a>
         <a href="planningV2.html" class="nav-link active">Planning de re-révisions</a>
@@ -74,15 +78,17 @@
       <p id="deadline-countdown"></p>
     </div>
 
-    <button id="btn-motivation" class="motivation-btn"> ✨ Phrase de motivation</button>
-    <div id="motivation-box" class="motivation-box" style="display:none;"></div>
-
+    <div class="header-bottom-row">
+      <button id="btn-motivation" class="motivation-btn">✨ Phrase de motivation</button>
+      
+      <nav class="planning-nav-center">
+         <a href="#section-today">Re-Révisions du jour</a>
+         <a href="#section-week">Vue Hebdomadaire</a>
+         <a href="#section-month">Vue Mensuel</a>
+      </nav>
+    </div>
     
-    <nav class="sub-nav">
-       <a href="#section-today" class="nav-button">🕒 Re-révisions du jour</a>
-      <a href="#section-week" class="nav-button">📅 Vue hebdomadaire</a>
-      <a href="#section-month" class="nav-button">📆 Vue mensuelle</a>
-    </nav>
+    <div id="motivation-box" class="motivation-box" style="display:none;"></div>
   </header>
 
   <main class="container planning-container">

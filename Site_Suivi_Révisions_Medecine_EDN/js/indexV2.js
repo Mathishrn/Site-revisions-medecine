@@ -24,6 +24,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Fonction pour retirer les accents
+  function removeAccents(str) {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
   async function askFirstLearningDate(previousDateStr) {
     const dateModal = document.getElementById("date-modal");
     const dateInput = document.getElementById("date-modal-input");
@@ -393,7 +398,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let filterCompletedOnly = false;
 
   function applyFilters() {
-    const t = currentSearchTerm.toLowerCase().trim();
+    // 1. On nettoie le terme recherché (minuscules + sans accents)
+    // On s'assure que currentSearchTerm n'est pas undefined
+    const term = currentSearchTerm || "";
+    const t = removeAccents(term.trim());
 
     CHAPITRES.forEach(chap => {
       const li = liParId[chap.id];
@@ -402,17 +410,24 @@ document.addEventListener("DOMContentLoaded", () => {
       const st = state.chapters[chap.id];
       let visible = true;
 
+      // A. FILTRE RECHERCHE TEXTUELLE
       if (t) {
-        const texte = li.dataset.searchText || "";
-        if (!texte.includes(t)) {
+        // On récupère le texte caché dans l'élément HTML
+        const texteOriginal = li.dataset.searchText || "";
+        // On lui enlève aussi les accents pour comparer ce qui est comparable
+        const texteSansAccent = removeAccents(texteOriginal);
+        
+        if (!texteSansAccent.includes(t)) {
           visible = false;
         }
       }
 
+      // B. FILTRE "DÉJÀ APPRIS" (Checkbox)
       if (filterCompletedOnly && (!st || !st.completed)) {
         visible = false;
       }
 
+      // C. APPLICATION DE LA VISIBILITÉ
       li.style.display = visible ? "" : "none";
     });
   }
@@ -637,6 +652,27 @@ btnSave.addEventListener("click", async () => { // Note l'ajout de "async" ici
     if(closeInfo) closeInfo.addEventListener("click", closeInfoModal);
     if(backdropInfo) backdropInfo.addEventListener("click", closeInfoModal);
     if(btnInfoOk) btnInfoOk.addEventListener("click", closeInfoModal);
+  }
+
+  // --- GESTION CROIX RECHERCHE ---
+  const searchClearBtn = document.getElementById("search-clear");
+  
+  if (searchInput && searchClearBtn) {
+    // Afficher/Masquer la croix quand on tape
+    searchInput.addEventListener("input", (e) => {
+      currentSearchTerm = e.target.value;
+      searchClearBtn.style.display = currentSearchTerm ? "block" : "none";
+      applyFilters();
+    });
+
+    // Clic sur la croix
+    searchClearBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      currentSearchTerm = "";
+      searchClearBtn.style.display = "none";
+      applyFilters();
+      searchInput.focus(); // Remet le curseur dans la case
+    });
   }
 
   construireListe();

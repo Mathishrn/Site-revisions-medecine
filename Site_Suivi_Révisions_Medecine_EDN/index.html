@@ -77,8 +77,11 @@
       <p id="deadline-countdown"></p>
     </div>
 
-    <button id="btn-motivation" class="motivation-btn">✨ Phrase de motivation</button>
-    <button id="btn-settings" class="settings-btn" title="Configurer les dates et intervalles">⚙️ Paramètres</button>
+    <div class="header-bottom-row">
+      <button id="btn-motivation" class="motivation-btn">✨ Phrase de motivation</button>
+      <button id="btn-settings" class="settings-btn" title="Configurer">⚙️ Paramètres</button>
+    </div>
+    
     <div id="motivation-box" class="motivation-box" style="display:none;"></div>
   </header>
 
@@ -95,16 +98,15 @@
     <section class="controls">
   <div class="search-wrapper">
     <label for="search-input">🔍 Rechercher un chapitre :</label>
-    <input
-      type="text"
-      id="search-input"
-      placeholder="Numéro ou titre (ex : 25, grossesse...)">
+    <div style="position:relative;"> <input type="text" id="search-input" placeholder="Numéro ou titre (ex : 25, grossesse...)">
+      <button id="search-clear" class="search-clear-btn" title="Effacer">✖</button>
+    </div>
   </div>
 
   <div class="filters-wrapper">
     <label>
       <input type="checkbox" id="filter-completed">
-      Afficher les chapitres déjà appris
+      Afficher seulement les chapitres appris
     </label>
   </div>
 

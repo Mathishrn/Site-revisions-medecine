@@ -54,11 +54,15 @@
 <body>
   <header class="header">
     <div class="header-top">
-      <h1>📊 Statistiques</h1>
+      <div class="header-title-group">
+        <h1>📊 Statistiques</h1>
+      </div>
+
       <button id="btn-theme-toggle" class="theme-toggle-btn" title="Mode sombre">🌙</button>
       <button id="btn-news" class="theme-toggle-btn2" title="Nouveautés">
-  <span>🔔</span> Nouveautés
-</button>
+        <span>🔔</span> Nouveautés
+      </button>
+
       <nav class="main-nav">
         <a href="index.html" class="nav-link">Suivi général</a>
         <a href="planningV2.html" class="nav-link">Planning de re-révisions</a>
@@ -73,48 +77,87 @@
       </div>
       <p id="deadline-countdown"></p>
     </div>
+
+    <div class="header-bottom-row">
+      <button id="btn-motivation" class="motivation-btn">✨ Phrase de motivation</button>
+      
+      <nav class="stats-nav-center">
+         <a href="#subjects-list">Suivi par Matière</a>
+      </nav>
+    </div>
     
-    <button id="btn-motivation" class="motivation-btn">✨ Phrase de motivation</button>
     <div id="motivation-box" class="motivation-box" style="display:none;"></div>
   </header>
 
   <main class="container">
     
     <!-- 1. Cartes Résumé (KPIs) - ORDRE MODIFIÉ -->
-    <section class="stats-summary-grid-4">
-      <!-- Total tout à gauche -->
-      <div class="stat-card">
-        <div class="stat-icon">🎓</div>
-        <div class="stat-info">
-          <h3>Total Appris</h3>
-          <p class="stat-value" id="stat-total-count">-</p>
+    <section>
+      
+      <h3 class="stats-category-title">📘 Nouveaux Chapitres (Apprentissage)</h3>
+      <div class="stats-summary-grid-4" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+        
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#e3f2fd; color:#1565c0;">🎓</div>
+          <div class="stat-info">
+            <h3>Total Appris</h3>
+            <p class="stat-value" id="kpi-learn-total">-</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#e3f2fd; color:#1565c0;">📅</div>
+          <div class="stat-info">
+            <h3>Cette semaine</h3>
+            <p class="stat-value" id="kpi-learn-week">-</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#e3f2fd; color:#1565c0;">🗓️</div>
+          <div class="stat-info">
+            <h3>Ce mois-ci</h3>
+            <p class="stat-value" id="kpi-learn-month">-</p>
+          </div>
         </div>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-icon">📅</div>
-        <div class="stat-info">
-          <h3>Cette semaine</h3>
-          <p class="stat-value" id="stat-week-count">-</p>
+      <h3 class="stats-category-title">🔄 Re-révisions (Consolidation)</h3>
+      <div class="stats-summary-grid-4" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+        
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#e8f5e9; color:#2e7d32;">✅</div>
+          <div class="stat-info">
+            <h3>Total Faites</h3>
+            <p class="stat-value" id="kpi-rev-total">-</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#e8f5e9; color:#2e7d32;">📅</div>
+          <div class="stat-info">
+            <h3>Cette semaine</h3>
+            <p class="stat-value" id="kpi-rev-week">-</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#e8f5e9; color:#2e7d32;">🗓️</div>
+          <div class="stat-info">
+            <h3>Ce mois-ci</h3>
+            <p class="stat-value" id="kpi-rev-month">-</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#ffebee; color:#c62828;">🧨</div>
+          <div class="stat-info">
+            <h3>Retard (Dette)</h3>
+            <p class="stat-value" id="kpi-rev-late">-</p>
+          </div>
         </div>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-icon">🗓️</div>
-        <div class="stat-info">
-          <h3>Ce mois-ci</h3>
-          <p class="stat-value" id="stat-month-count">-</p>
-        </div>
-      </div>
-
-      <!-- Dette tout à droite -->
-      <div class="stat-card">
-        <div class="stat-icon">🧨</div>
-        <div class="stat-info">
-          <h3>Dette (Retard)</h3>
-          <p class="stat-value" id="stat-late-count">-</p>
-        </div>
-      </div>
     </section>
 
     <!-- 2. Projections uniquement -->
@@ -183,6 +226,7 @@
       
       <div class="subject-search-container">
         <input type="text" id="subject-search" class="subject-search-input" placeholder="🔍 Rechercher une matière (ex: Cardio, Pneumo...)">
+        <button id="subject-search-clear" class="search-clear-btn" title="Effacer">✖</button>
       </div>
 
       <div id="subjects-list" class="subjects-list"></div>

@@ -179,7 +179,7 @@ a {
 /* --------- Container --------- */
 
 .container {
-  max-width: 1000px;
+  max-width: 1020px;
   margin: 18px auto 40px;
   padding: 0 16px;
 }
@@ -1273,29 +1273,47 @@ button:active {
 
 /* Liste Détaillée */
 
+/* --- SCROLL FORCE LISTE MATIÈRES (CORRIGÉ & STABILISÉ) --- */
 #subjects-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 
-  /* HAUTEUR ET SCROLL */
-  max-height: 650px !important;  
-  overflow-y: auto !important;   
+  /* HAUTEUR FIXE pour éviter que ça bouge */
+  height: 600px !important;      /* Taille fixe imposée */
+  min-height: 600px !important;  /* Sécurité */
+  overflow-y: auto !important;   /* Scroll si ça dépasse */
   
   /* ESTHÉTIQUE */
   padding: 10px;
   padding-right: 8px; 
-  border: 1px solid #ccc; /* Bordure grise standard */
+  border: 1px solid #ccc;
   border-radius: 8px;
-  
-  /* IMPORTANT : Fond solide pour éviter les soucis de transparence */
   background: #ffffff; 
 }
 
 /* Ajustement spécifique Dark Mode */
 body.dark-mode #subjects-list {
   border-color: #444 !important;
-  background: #1e1e1e !important; /* Fond noir/gris foncé solide */
+  background: #1e1e1e !important;
+}
+
+/* --- NOUVEAUX TITRES STATS (Sections distinctes) --- */
+.stats-category-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2f7e5f;
+  margin: 20px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid rgba(47, 126, 95, 0.1);
+  padding-bottom: 5px;
+}
+
+body.dark-mode .stats-category-title {
+  color: #81c784;
+  border-bottom-color: rgba(255,255,255,0.1);
 }
 
 /* S'assurer que les enfants (les matières) sont bien visibles */
@@ -1988,20 +2006,52 @@ body.dark-mode .subject-chapter.done {
 }
 
 
-/* Positionnement du bouton Paramètres sur l'accueil */
-.header > #btn-settings {
+/* --- CORRECTIF LAYOUT HEADER (Boutons + Motivation) --- */
+
+/* Conteneur pour aligner Motivation (Gauche) et Paramètres (Centre) */
+.header-bottom-row {
+  position: relative;
+  display: flex;
+  justify-content: center; /* Centre le bouton Paramètres */
+  align-items: center;
+  margin-top: 15px;
+  min-height: 40px;
+}
+
+/* Le bouton Motivation reste à gauche */
+.header .motivation-btn {
   position: absolute;
-  
-  /* Centrage horizontal */
-  left: 50%;
-  transform: translateX(-50%);
-  
-  /* Alignement vertical avec le bouton motivation */
-  /* On le remonte un peu depuis le bas pour qu'il tombe pile en face */
-  bottom: 20px; 
-  
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
   margin: 0;
-  z-index: 90;
+}
+
+/* Le bouton Paramètres est au centre (flux normal du flex) */
+.header #btn-settings {
+  position: static !important; /* On annule l'absolu */
+  transform: none !important;
+  margin: 0 !important;
+}
+
+/* La boîte de texte passe EN DESSOUS de tout ça */
+.motivation-box {
+  margin-top: 15px;
+  position: relative;
+  z-index: 50;
+  /* On s'assure qu'elle pousse le contenu si besoin ou s'affiche proprement */
+}
+
+/* Mobile : On empile tout proprement */
+@media (max-width: 650px) {
+  .header-bottom-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .header .motivation-btn {
+    position: static;
+    transform: none;
+  }
 }
 
 /* Sécurité Mobile : Sur petit écran, on annule l'absolu pour qu'il ne chevauche pas */
@@ -2097,4 +2147,187 @@ body.dark-mode div[style*="background:#ffebee"] {
   padding: 6px 8px !important;  /* Ajuste ces chiffres (Haut/Bas  Gauche/Droite) */
   font-size: 15px !important;     /* Ajuste la taille du texte */
   width: auto !important;         /* Laisse le bouton s'élargir selon le texte */
+}
+
+/* --- CROIX DE SUPPRESSION RECHERCHE --- */
+.search-wrapper, 
+.subject-search-container {
+  position: relative; /* Nécessaire pour placer la croix */
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 27%;
+  transform: translateY(-10%);
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 16px;
+  cursor: pointer;
+  display: none; /* Caché par défaut si vide */
+  padding: 0 5px;
+}
+
+.search-clear-btn:hover {
+  color: #d32f2f;
+}
+
+/* Ajustement input pour laisser place à la croix */
+.search-wrapper input,
+.subject-search-container input {
+  padding-right: 30px !important;
+}
+
+/* --- GESTION RESPONSIVE (MOBILE / TABLETTE) --- */
+
+/* Dès que l'écran fait moins de 900px de large */
+@media (max-width: 900px) {
+  
+  /* 1. On passe le haut du header en mode "Colonne" (vertical) */
+  .header-top {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding-bottom: 10px;
+  }
+
+  /* 2. On annule le positionnement absolu du bouton Nouveautés */
+  .theme-toggle-btn2 {
+    position: static !important; /* Redevient un élément normal */
+    transform: none !important;
+    margin: 5px auto; /* Centré */
+    order: 3; /* On décide de l'afficher en 3ème position */
+  }
+
+  /* 3. On annule le positionnement absolu du bouton Mode Sombre */
+  .theme-toggle-btn {
+    position: static !important;
+    transform: none !important;
+    margin: 5px auto;
+    order: 2; /* Juste avant les nouveautés */
+  }
+
+  /* 4. On s'assure que le titre et le bouton paramètre restent en haut */
+  .header-title-group {
+    align-items: center;
+    width: 100%;
+    order: 1;
+    margin-bottom: 10px;
+  }
+  
+  /* 5. On ajuste la navigation pour qu'elle prenne de la place si besoin */
+  .main-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+    order: 4;
+    margin-top: 10px;
+  }
+
+  /* 6. On gère le bas du header (Motivation + Paramètres du bas) */
+  .header-bottom-row {
+    flex-direction: column; /* On empile verticalement */
+    gap: 15px;
+    margin-top: 20px;
+  }
+
+  /* On remet les boutons du bas dans le flux normal */
+  .header .motivation-btn,
+  .header > #btn-settings {
+    position: static !important;
+    transform: none !important;
+    width: fit-content;
+    margin: 0 auto;
+  }
+}
+
+/* --- NAVIGATION CENTRÉE (PLANNING & STATS) --- */
+
+/* On applique le style aux deux classes d'un coup */
+.planning-nav-center {
+  display: flex;
+  gap: 20px;
+  margin-right: 40px; /* Plus ce chiffre est grand, plus ça part à gauche */
+}
+
+.stats-nav-center {
+  display: flex;
+  gap: 20px;
+  margin-right: 2px;
+}
+
+/* Style des liens (boutons) pour les deux pages */
+.planning-nav-center a,
+.stats-nav-center a {
+  display: inline-block;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  transition: all 0.2s ease;
+}
+
+.planning-nav-center a:hover,
+.stats-nav-center a:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* RESPONSIVE : Sur mobile, on recentre tout */
+@media (max-width: 900px) {
+  .planning-nav-center,
+  .stats-nav-center {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    margin-right: 0; /* On annule le décalage sur mobile */
+  }
+}
+
+/* --- RESPONSIVE : ORDRE DES CONTRÔLES (Sauvegarde en haut sur mobile) --- */
+
+@media (max-width: 1020px) {
+  /* On force la section de contrôles à s'empiler verticalement */
+  .controls {
+    flex-direction: column;
+    align-items: stretch; /* Prend toute la largeur */
+    gap: 12px;
+  }
+
+  /* 1. On force le bloc BOUTONS à passer en PREMIER */
+  .buttons-wrapper {
+    order: 1; 
+    
+    /* On empile aussi les boutons les uns sur les autres pour qu'ils soient gros et cliquables */
+    display: flex;
+    flex-direction: column; 
+    gap: 8px;
+    margin-bottom: 10px;
+    width: 100%;
+  }
+
+  /* Les boutons prennent toute la largeur sur mobile */
+  .buttons-wrapper button,
+  .buttons-wrapper .info-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* 2. La barre de recherche passe en DEUXIÈME */
+  .search-wrapper {
+    order: 2;
+    max-width: 100%; /* S'assure qu'elle prend la largeur dispo */
+    flex: 1 1 auto;
+  }
+
+  /* 3. Les filtres passent en DERNIER */
+  .filters-wrapper {
+    order: 3;
+    margin-top: 5px;
+  }
 }

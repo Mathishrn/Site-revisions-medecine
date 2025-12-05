@@ -111,42 +111,82 @@ function calculateAndRenderStats(state) {
 // -------------------------------------------------------------------------
 
 function renderKPIs(learnedDates, state, totalLate) {
-  const weekElem = document.getElementById("stat-week-count");
-  const monthElem = document.getElementById("stat-month-count");
-  const lateElem = document.getElementById("stat-late-count"); 
-  const totalElem = document.getElementById("stat-total-count");
-
+  // --- 1. CONFIGURATION DES DATES ---
   const today = new Date();
-  const currentMonthISO = formatDateISO(today).substring(0, 7);
+  const currentMonthISO = formatDateISO(today).substring(0, 7); // ex: "2025-12"
   
+  // Trouver le lundi de la semaine courante
   const d = new Date(today);
   const day = d.getDay(); 
   const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
   const monday = new Date(d.setDate(diff));
   const mondayISO = formatDateISO(monday);
 
-  let weekCount = 0;
-  let monthCount = 0;
+  // --- 2. CALCULS APPRENTISSAGE (Nouveaux chapitres) ---
+  let learnWeek = 0;
+  let learnMonth = 0;
 
+  // learnedDates contient déjà uniquement les dates de 1ère apprentissage (filtré dans calculateAndRenderStats)
   learnedDates.forEach(dateStr => {
-    if (dateStr.startsWith(currentMonthISO)) monthCount++;
-    if (dateStr >= mondayISO) weekCount++;
+    if (dateStr.startsWith(currentMonthISO)) learnMonth++;
+    if (dateStr >= mondayISO) learnWeek++;
   });
 
-  let totalDone = 0;
+  const totalLearned = learnedDates.length;
+
+
+  // --- 3. CALCULS RÉVISIONS (Re-révisions validées) ---
+  let revTotal = 0;
+  let revWeek = 0;
+  let revMonth = 0;
+
+  // On doit parcourir tout le state pour trouver toutes les reviews FAITES
   CHAPITRES.forEach(ch => {
-    if (state.chapters[ch.id] && state.chapters[ch.id].completed) totalDone++;
+    const st = state.chapters[ch.id];
+    if (st && st.reviews) {
+      st.reviews.forEach(r => {
+        if (r.done && r.date) {
+          revTotal++;
+          if (r.date.startsWith(currentMonthISO)) revMonth++;
+          if (r.date >= mondayISO) revWeek++;
+        }
+      });
+    }
   });
 
-  weekElem.textContent = weekCount;
-  monthElem.textContent = monthCount;
-  totalElem.textContent = `${totalDone} / ${CHAPITRES.length}`;
+  // --- 4. AFFICHAGE DANS LE DOM ---
   
-  lateElem.textContent = totalLate;
-  lateElem.style.color = totalLate > 0 ? "#c62828" : "#2e7d32";
-  if(totalLate === 0) lateElem.textContent = "0 🎉";
+  // Bloc Apprentissage
+  const elLearnTotal = document.getElementById("kpi-learn-total");
+  const elLearnWeek = document.getElementById("kpi-learn-week");
+  const elLearnMonth = document.getElementById("kpi-learn-month");
+  
+  if (elLearnTotal) elLearnTotal.textContent = `${totalLearned} / ${CHAPITRES.length}`;
+  if (elLearnWeek) elLearnWeek.textContent = learnWeek;
+  if (elLearnMonth) elLearnMonth.textContent = learnMonth;
 
-  return { weekCount, monthCount };
+  // Bloc Révisions
+  const elRevTotal = document.getElementById("kpi-rev-total");
+  const elRevWeek = document.getElementById("kpi-rev-week");
+  const elRevMonth = document.getElementById("kpi-rev-month");
+  const elRevLate = document.getElementById("kpi-rev-late");
+
+  if (elRevTotal) elRevTotal.textContent = revTotal;
+  if (elRevWeek) elRevWeek.textContent = revWeek;
+  if (elRevMonth) elRevMonth.textContent = revMonth;
+
+  // Retard
+  if (elRevLate) {
+    elRevLate.textContent = totalLate;
+    elRevLate.style.color = totalLate > 0 ? "#c62828" : "#2e7d32";
+    if(totalLate === 0) elRevLate.textContent = "0 🎉";
+  }
+
+  // On retourne les compteurs "hebdo" globaux (somme des deux) pour les objectifs
+  return { 
+    weekCount: learnWeek + revWeek, // Pour la barre d'objectif hebdo
+    monthCount: learnMonth + revMonth 
+  };
 }
 
 function renderProjections(learnedDates, state) {
@@ -559,22 +599,48 @@ function updateGoalUI(type, current, max) {
   else if (bar) bar.style.backgroundColor = "#29b6f6";
 }
 
-// --- RECHERCHE MATIÈRE ---
+// Fonction utilitaire (si pas déjà dispo)
+function removeAccents(str) {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+// --- RECHERCHE MATIÈRE (Accents + Croix) ---
 document.addEventListener("DOMContentLoaded", () => {
   const searchInput = document.getElementById("subject-search");
+  const searchClearBtn = document.getElementById("subject-search-clear");
+  
   if(searchInput) {
-    searchInput.addEventListener("input", (e) => {
-      const term = e.target.value.toLowerCase();
+    const handleSearch = () => {
+      const rawTerm = searchInput.value;
+      const term = removeAccents(rawTerm);
       const items = document.querySelectorAll(".subject-item");
       
+      // Gestion croix
+      if(searchClearBtn) {
+        searchClearBtn.style.display = rawTerm ? "block" : "none";
+      }
+
       items.forEach(item => {
-        const name = item.querySelector(".subject-name").textContent.toLowerCase();
+        const nameRaw = item.querySelector(".subject-name").textContent;
+        const name = removeAccents(nameRaw);
+        
         if(name.includes(term)) {
           item.style.display = "";
         } else {
           item.style.display = "none";
         }
       });
-    });
+    };
+
+    searchInput.addEventListener("input", handleSearch);
+
+    // Clic sur la croix
+    if(searchClearBtn) {
+      searchClearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        handleSearch(); // Relance la recherche à vide (affiche tout)
+        searchInput.focus();
+      });
+    }
   }
 });
