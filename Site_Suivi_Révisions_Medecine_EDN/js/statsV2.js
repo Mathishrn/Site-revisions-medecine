@@ -10,6 +10,14 @@ document.addEventListener("DOMContentLoaded", () => {
       motivationBox.textContent = msg;
       motivationBox.style.display = "block";
     });
+
+  const sortSelect = document.getElementById("subject-sort");
+if (sortSelect) {
+  sortSelect.addEventListener("change", () => {
+    const state = loadState();
+    applySubjectSortAndRender(state);
+  });
+}
   }
 
   calculateAndRenderStats(state);
@@ -101,10 +109,75 @@ function calculateAndRenderStats(state) {
     .sort((a, b) => a.percent - b.percent || a.done - b.done);
   renderSubjectsCards(sortedAsc.slice(0, 3), "flop-subjects-container", false);
 
-  // G. Liste détaillée (On garde tout ici, y compris "Autres")
-  const subjectsAlpha = [...subjectsArray].sort((a, b) => a.name.localeCompare(b.name));
-  renderSubjectsList(subjectsAlpha, state);
+
+  // G. Liste détaillée (MODIFIÉ POUR LE TRI)
+  // On stocke les données brutes dans une variable globale ou accessible
+  window.cachedSubjectsData = subjectsArray; 
+  
+  // On lance le premier rendu (par défaut A-Z)
+  applySubjectSortAndRender(state);
 }
+
+// --- NOUVELLE FONCTION DE TRI ---
+function applySubjectSortAndRender(state) {
+  const sortSelect = document.getElementById("subject-sort");
+  const sortValue = sortSelect ? sortSelect.value : "name-asc";
+  
+  // On travaille sur une copie pour ne pas abîmer l'ordre original
+  let data = [...window.cachedSubjectsData]; 
+
+  data.sort((a, b) => {
+    switch (sortValue) {
+      case "name-asc":
+        return a.name.localeCompare(b.name);
+      case "name-desc": // Inverse A-Z
+        return b.name.localeCompare(a.name);
+        
+      case "percent-desc": // Mieux réussis en haut
+        return b.percent - a.percent || a.name.localeCompare(b.name);
+      case "percent-asc": // Moins avancés en haut
+        return a.percent - b.percent || a.name.localeCompare(b.name);
+        
+      case "count-desc": // Les plus grosses matières en haut
+        return b.total - a.total || a.name.localeCompare(b.name);
+      case "count-asc": // Les petites matières en haut
+        return a.total - b.total || a.name.localeCompare(b.name);
+        
+      default:
+        return 0;
+    }
+  });
+
+  // 1. On affiche la liste triée (cela recrée tous les éléments HTML)
+  renderSubjectsList(data, state);
+
+  // 2. FIX RECHERCHE : On réapplique immédiatement le filtre si du texte est présent
+  const searchInput = document.getElementById("subject-search");
+  if (searchInput && searchInput.value.trim() !== "") {
+    // Cette ligne simule une frappe au clavier pour déclencher ton filtre existant
+    searchInput.dispatchEvent(new Event("input"));
+  }
+}
+
+// Ajout de l'écouteur d'événement au chargement
+document.addEventListener("DOMContentLoaded", () => {
+  const sortSelect = document.getElementById("subject-sort");
+  if (sortSelect) {
+    const savedSort = localStorage.getItem("pref_subject_sort");
+    if (savedSort) {
+      sortSelect.value = savedSort;
+    }
+    
+    sortSelect.addEventListener("change", () => {
+      // 2. Sauvegarde du nouveau choix
+      localStorage.setItem("pref_subject_sort", sortSelect.value);
+      
+      const state = loadState();
+      applySubjectSortAndRender(state);
+    });
+  }
+  // ... le reste de tes écouteurs ...
+});
 
 // -------------------------------------------------------------------------
 // Helpers KPIs & Projections
@@ -643,4 +716,11 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
   }
+  const sortSelect = document.getElementById("subject-sort");
+if (sortSelect) {
+  sortSelect.addEventListener("change", () => {
+    const state = loadState();
+    applySubjectSortAndRender(state);
+  });
+}
 });

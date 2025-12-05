@@ -1,5 +1,28 @@
 // js/common.js
 
+/* --- PROTECTION ANTI-COPIE --- */
+document.addEventListener('DOMContentLoaded', () => {
+  
+  // 1. Bloquer le clic droit (Menu contextuel)
+  document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    // Optionnel : afficher une petite alerte (déconseillé car agaçant, mais possible)
+    // alert("Pas de clic droit ici ! 😉"); 
+  });
+
+  // 2. Bloquer certains raccourcis clavier (Copier, Coller, Inspecter...)
+  document.addEventListener('keydown', (e) => {
+    // Bloque Ctrl+C (Copier), Ctrl+X (Couper), Ctrl+U (Code source), F12 (Inspecter)
+    if (
+      (e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.key === 'x' || e.key === 'X' || e.key === 'u' || e.key === 'U')) ||
+      e.key === 'F12'
+    ) {
+      e.preventDefault();
+    }
+  });
+
+});
+
 // --- Utilitaires dates ---
 
 function parseDate(str) {

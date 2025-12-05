@@ -108,7 +108,7 @@ a {
   height: 100%;
   width: 0;
   background: linear-gradient(90deg, #ffe082, #ff7043);
-  transition: width 0.25s ease-out;
+  transition: width 3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 #deadline-countdown {
@@ -206,7 +206,7 @@ a {
   height: 100%;
   width: 0;
   background: linear-gradient(90deg, #f46b45, #76b852);
-  transition: width 0.25s ease-out;
+  transition: width 3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .progress-text {
@@ -285,9 +285,18 @@ button:active {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: calc(100vh - 260px);
-  overflow-y: auto;
+
+  height: 85vh;       /* Occupe 65% de la hauteur de l'écran quoi qu'il arrive */
+  min-height: 400px;  /* Sécurité pour les petits écrans */
+  
+  overflow-y: auto;   /* La barre de défilement apparaît à l'intérieur */
   padding-right: 4px;
+  
+  /* Optionnel : petite bordure pour délimiter la zone fixe */
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(255,255,255,0.5); /* Fond léger pour matérialiser la zone */
 }
 
 .chapter-item {
@@ -327,7 +336,7 @@ button:active {
 
 .chapter-info-btn {
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: 12px;
   border-radius: 999px;
   background: #e3f2fd;
   color: #1e88e5;
@@ -796,6 +805,7 @@ button:active {
 .modal-progress-fill {
   height: 100%;
   background: linear-gradient(90deg, #66bb6a, #2e7d32);
+  transition: width 3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .modal-reviews-list {
@@ -924,7 +934,7 @@ button:active {
 
 /* --------- Responsive --------- */
 
-@media (max-width: 900px) {
+@media (max-width: 950px) {
   .week-view {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -1370,7 +1380,7 @@ body.dark-mode .stats-category-title {
 .subject-progress-fill {
   height: 100%;
   border-radius: 999px;
-  transition: width 0.5s ease;
+  transition: width 3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .subject-percent-text {
@@ -1708,14 +1718,30 @@ body.dark-mode .form-group textarea {
 /* --- CHANGELOG (NOUVEAUTÉS) --- */
 
 .news-content {
-  max-width: 500px;
+  /* On l'élargit un peu */
+  max-width: 600px;
+  
+  /* HAUTEUR : On force 80% de la hauteur de l'écran */
+  height: 90vh;       
+  
+  /* Flexbox pour gérer le scroll interne proprement */
+  display: flex;
+  flex-direction: column;
 }
 
 .changelog-list {
-  margin-top: 20px;
-  max-height: 60vh;
-  overflow-y: auto; /* Scroll si la liste est longue */
-  padding-right: 10px;
+  /* Prend toute la place restante en hauteur */
+  flex: 1;
+  
+  /* On enlève la limite précédente */
+  max-height: none; 
+  
+  /* On active le scroll ici */
+  overflow-y: auto;
+  
+  /* Un peu d'espace en bas */
+  margin-bottom: 10px;
+  padding-right: 10px; /* Pour éviter que le scroll cache le texte */
 }
 
 .changelog-item {
@@ -1885,7 +1911,7 @@ body.dark-mode .changelog-version {
 .goal-progress-bar {
   height: 100%;
   background: #29b6f6;
-  transition: width 0.5s;
+  transition: width 1.0s;
 }
 .goal-text {
   font-size: 12px;
@@ -2182,7 +2208,7 @@ body.dark-mode div[style*="background:#ffebee"] {
 /* --- GESTION RESPONSIVE (MOBILE / TABLETTE) --- */
 
 /* Dès que l'écran fait moins de 900px de large */
-@media (max-width: 900px) {
+@media (max-width: 950px) {
   
   /* 1. On passe le haut du header en mode "Colonne" (vertical) */
   .header-top {
@@ -2279,7 +2305,7 @@ body.dark-mode div[style*="background:#ffebee"] {
 }
 
 /* RESPONSIVE : Sur mobile, on recentre tout */
-@media (max-width: 900px) {
+@media (max-width: 950px) {
   .planning-nav-center,
   .stats-nav-center {
     flex-wrap: wrap;
@@ -2291,7 +2317,7 @@ body.dark-mode div[style*="background:#ffebee"] {
 
 /* --- RESPONSIVE : ORDRE DES CONTRÔLES (Sauvegarde en haut sur mobile) --- */
 
-@media (max-width: 1020px) {
+@media (max-width: 30000px) {
   /* On force la section de contrôles à s'empiler verticalement */
   .controls {
     flex-direction: column;
@@ -2330,4 +2356,286 @@ body.dark-mode div[style*="background:#ffebee"] {
     order: 3;
     margin-top: 5px;
   }
+}
+
+/* --- Styles des Selects de Tri --- */
+
+.sort-select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  color: #333;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  /* Pour aligner avec la hauteur des inputs */
+  height: 38px; 
+}
+
+.sort-select:hover {
+  border-color: #2f7e5f;
+}
+
+.sort-select:focus {
+  border-color: #2f7e5f;
+  box-shadow: 0 0 0 2px rgba(47, 126, 95, 0.2);
+}
+
+/* Dark Mode pour les Selects */
+body.dark-mode .sort-select {
+  background-color: #2c2c2c;
+  border-color: #444;
+  color: #fff;
+}
+
+body.dark-mode .sort-select:hover {
+  border-color: #4db6ac;
+}
+
+/* Ajustement responsive pour la barre de recherche stats */
+@media (max-width: 600px) {
+  .subject-search-container {
+    flex-direction: column;
+  }
+  .sort-select {
+    width: 100%;
+  }
+}
+
+/* --- CORRECTIF LAYOUT V2.4 : Boutons ajustés & Ligne de recherche --- */
+
+/* 1. Conteneur principal */
+.controls {
+  display: flex;
+  flex-direction: column; /* Ligne 1 : Boutons, Ligne 2 : Recherche */
+  gap: 15px;
+  align-items: center;    /* Tout centrer */
+  margin-bottom: 30px;
+}
+
+/* 2. Les Boutons (Sauvegarder, Charger, Info) */
+.buttons-wrapper {
+  display: flex !important;
+  flex-direction: row !important; /* Force l'alignement horizontal */
+  flex-wrap: wrap;                /* Revient à la ligne si écran minuscule */
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  order: 1; /* On s'assure qu'ils restent en haut */
+}
+
+/* Taille adaptée au texte (Auto) */
+.buttons-wrapper button, 
+.buttons-wrapper .info-btn {
+  width: auto !important;     /* C'EST ICI LA CLÉ : on annule le 100% */
+  min-width: 0;
+  padding: 8px 16px;
+  white-space: nowrap;        /* Empêche le texte de se casser */
+  font-size: 14px;
+}
+
+/* 3. La ligne Recherche + Filtres + Tris */
+.search-tools {
+  display: flex;
+  flex-wrap: wrap; /* Permet de passer à la ligne sur mobile */
+  align-items: center;
+  justify-content: center;
+  gap: 15px; /* Espace entre Recherche, Checkbox et Tri */
+  width: 100%;
+  order: 2;
+}
+
+/* Groupe Recherche */
+.search-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-group input {
+  padding: 8px 30px 8px 10px; /* Place pour la croix */
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 220px; /* Taille fixe confortable */
+}
+
+/* Groupe Tri */
+.sort-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Checkbox compacte */
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* --- RESPONSIVE MOBILE (Surcharge finale) --- */
+@media (max-width: 700px) {
+  /* Sur mobile, on autorise la recherche à prendre toute la largeur si besoin */
+  .search-group input {
+    width: 100%;
+    min-width: 200px;
+  }
+  
+  /* On s'assure que les boutons ne s'empilent pas bêtement sauf si nécessaire */
+  .buttons-wrapper {
+    width: 100% !important;
+  }
+}
+
+/* --- PROTECTION ANTI-COPIE --- */
+body {
+  /* Empêche la sélection de texte sur tout le site */
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE10+/Edge */
+  user-select: none;         /* Standard */
+}
+
+/* On ré-autorise la sélection UNIQUEMENT dans les champs de texte
+   pour que l'utilisateur puisse quand même taper ses recherches/notes */
+input, textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* --- CORRECTIF DARK MODE V2.4 (Barre d'outils) --- */
+
+/* 1. La barre de recherche et le menu de tri */
+body.dark-mode .search-group input,
+body.dark-mode .sort-select {
+  background-color: #2c2c2c;  /* Gris foncé */
+  color: #ffffff;             /* Texte blanc */
+  border-color: #555;         /* Bordure plus discrète */
+}
+
+/* Au survol */
+body.dark-mode .sort-select:hover,
+body.dark-mode .search-group input:focus {
+  border-color: #4db6ac;      /* Bordure verte au focus */
+}
+
+/* 2. Le texte du label "Appris" et "Trier :" */
+body.dark-mode .filter-checkbox,
+body.dark-mode .sort-group label {
+  color: #e0e0e0;             /* Texte quasi blanc */
+}
+
+/* 3. La croix "Effacer" dans la recherche */
+body.dark-mode .search-clear-btn {
+  color: #bbb;
+}
+body.dark-mode .search-clear-btn:hover {
+  color: #ef5350;             /* Rouge clair au survol */
+}
+
+/* 4. Le bouton "i" (Infos) en mode sombre */
+body.dark-mode .info-btn {
+  background-color: #37474f;  /* Bleu gris très foncé */
+  color: #90caf9;             /* Bleu clair */
+  border-color: #546e7a;
+}
+body.dark-mode .info-btn:hover {
+  background-color: #455a64;
+  color: #ffffff;
+}
+
+/* --- CORRECTIF FINAL DARK MODE : MODALE INFOS --- */
+
+/* 1. Rendre le texte des astuces lisible (Gris foncé -> Blanc cassé) */
+body.dark-mode #info-modal ul {
+  color: #e0e0e0 !important; 
+}
+
+/* 2. Adapter la boîte d'alerte rouge (Fond blanc -> Fond rouge sombre) */
+body.dark-mode #info-modal div[style*="background:#fff5f5"] {
+  background-color: #3e2723 !important; /* Rouge très sombre */
+  border-color: #b71c1c !important;     /* Bordure rouge */
+  color: #ffcdd2 !important;            /* Texte rouge clair */
+}
+
+/* 3. Le titre "Attention aux données" (Rouge vif -> Rouge clair) */
+body.dark-mode #info-modal h3[style*="color: #d32f2f"] {
+  color: #ef5350 !important;
+}
+
+/* 4. Le texte à l'intérieur de l'alerte */
+body.dark-mode #info-modal p[style*="color:#b71c1c"] {
+  color: #ffcdd2 !important;
+}
+
+/* 5. Le titre bleu "Astuces d'utilisation" (Bleu foncé -> Bleu clair) */
+body.dark-mode #info-modal h3[style*="color: #1565c0"] {
+  color: #90caf9 !important;
+}
+
+/* 6. Le grand titre vert "Informations & Astuces" */
+body.dark-mode #info-modal h2[style*="color: #2f7e5f"] {
+  color: #81c784 !important;
+}
+
+/* 7. Le séparateur (ligne grise) */
+body.dark-mode #info-modal hr {
+  border-top-color: #444 !important;
+}
+
+/* --- AMÉLIORATION LISIBILITÉ MODALE INFOS --- */
+
+/* 1. Espacement général de la liste */
+#info-modal ul {
+  gap: 20px !important; /* Plus d'espace entre les blocs */
+}
+
+/* 2. Chaque astuce (l'élément li) */
+#info-modal li {
+  padding-bottom: 15px;            /* Espace interne en bas */
+  border-bottom: 1px solid #eee;   /* Ligne de séparation grise claire */
+  align-items: flex-start !important; /* Aligne l'icône en haut */
+}
+
+/* On enlève la ligne pour le dernier élément */
+#info-modal li:last-child {
+  border-bottom: none;
+}
+
+/* 3. Les Titres (les balises <strong>) */
+#info-modal li strong {
+  display: block;                  /* Le titre prend toute la largeur (passe à la ligne) */
+  font-size: 15px;                 /* Un peu plus gros */
+  color: #1565c0;                  /* Bleu pour bien ressortir en mode jour */
+  margin-bottom: 4px;              /* Espace sous le titre */
+  text-decoration: underline;      /* Soulignement demandé */
+  text-underline-offset: 3px;      /* Le trait un peu décollé du texte */
+  text-decoration-color: #b3e5fc;  /* Soulignement plus clair que le texte */
+}
+
+/* --- ADAPTATION MODE SOMBRE (Dark Mode) --- */
+
+body.dark-mode #info-modal li {
+  border-bottom-color: #444;       /* Ligne de séparation plus sombre */
+}
+
+body.dark-mode #info-modal li strong {
+  color: #90caf9;                  /* Bleu clair lumineux */
+  text-decoration-color: #1e88e5;  /* Soulignement bleu discret */
+}
+
+/* --- CENTRAGE TITRE ASTUCES --- */
+#info-modal h3[style*="color: #1565c0"] {
+  text-align: center !important;
+  margin-top: 10px; /* Un petit peu d'espace au-dessus pour aérer */
 }

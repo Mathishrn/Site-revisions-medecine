@@ -97,25 +97,37 @@
 
     <!-- Recherche + sauvegarde/chargement -->
     <section class="controls">
-  <div class="search-wrapper">
-    <label for="search-input">🔍 Rechercher un chapitre :</label>
-    <div style="position:relative;"> <input type="text" id="search-input" placeholder="Numéro ou titre (ex : 25, grossesse...)">
+  <div class="buttons-wrapper">
+    <button id="btn-save">💾 Sauvegarder</button>
+    <button id="btn-load">📂 Charger</button>
+    <button id="btn-info" class="info-btn" title="Attention aux données">ℹ️ Infos & Astuces</button>
+    <input type="file" id="file-input" accept=".json" style="display:none">
+  </div>
+
+  <div class="search-tools">
+
+    <label class="filter-checkbox">
+      <input type="checkbox" id="filter-completed">
+      Afficher ceux appris seulement
+    </label>
+    
+    <div class="search-group">
+      <input type="text" id="search-input" placeholder="🔍 Rechercher (ex: 25, grossesse...)">
       <button id="search-clear" class="search-clear-btn" title="Effacer">✖</button>
     </div>
-  </div>
 
-  <div class="filters-wrapper">
-    <label>
-      <input type="checkbox" id="filter-completed">
-      Afficher seulement les chapitres appris
-    </label>
-  </div>
+    <div class="sort-group">
+      <label for="chapter-sort">Trier :</label>
+      <select id="chapter-sort" class="sort-select">
+        <option value="id-asc">🔢 N° (1 &rarr; 367)</option>
+        <option value="id-desc">🔢 N° (367 &rarr; 1)</option> 
+        <option value="date-desc">📅 Appris en dernier</option>
+        <option value="date-asc">📅 Appris en premier</option>
+        <option value="review-count">🧠 Nb re-révisions faites</option>
+        <option value="next-review">🚨 Prochaine re-révision</option>
+  </select>
+    </div>
 
-  <div class="buttons-wrapper">
-    <button id="btn-save">💾 Sauvegarder la progression</button>
-    <button id="btn-load">📂 Charger une progression</button>
-    <button id="btn-info" class="info-btn" title="Attention aux données">ℹ️</button>
-    <input type="file" id="file-input" accept=".json" style="display:none">
   </div>
 </section>
 
@@ -155,28 +167,126 @@
     <div class="modal-content">
       <button class="modal-close" id="info-close">✖</button>
       
-      <h3 style="color: #d32f2f; display:flex; align-items:center; gap:8px;">
-        ⚠️ Attention aux données !
-      </h3>
-      
-      <p class="modal-desc" style="margin-top:16px; font-size:15px; line-height:1.6;">
-        Toute ta progression est enregistrée dans la <strong>mémoire de ton navigateur</strong> (Local Storage).
-      </p>
+      <h2 style="margin-bottom: 20px; text-align: center; color: #2f7e5f;">ℹ️ Informations & Astuces</h2>
 
-      <div style="background:#ffebee; border:1px solid #ffcdd2; padding:12px; border-radius:8px; margin: 16px 0; color:#b71c1c; font-size:14px;">
-        <strong>Si tu effaces les "cookies et données des sites"</strong> ou si tu changes d'ordinateur/téléphone ou de navigateur (chrome, edge, firefox, safari...),
-        <span style="text-decoration:underline;">tu perdras tout ton suivi</span>.
-      </div>
-
-      <p style="font-size:14px; color:#555;">
-        <strong>La solution ?</strong><br>
-        Utilise le bouton <strong>"💾 Sauvegarder"</strong> régulièrement (par exemple une fois par semaine) pour télécharger un fichier de sauvegarde sur ton ordinateur/cloud.
+      <div style="background:#fff5f5; border-left: 5px solid #d32f2f; padding: 15px; border-radius: 4px; margin-bottom: 25px;">
+        <h3 style="color: #d32f2f; margin-top:0; font-size: 16px; display:flex; align-items:center; gap:8px;">
+          ⚠️ Attention aux données !
+        </h3>
+        <p style="font-size:14px; color:#b71c1c; margin-top:8px; line-height: 1.5;">
+          Ta progression est enregistrée dans la <strong>mémoire du navigateur</strong>. 
+          Si tu effaces "cookies et données des sites" ou changes d'appareil ou de navigateur (chrome, edge, firefox, safari...), tu perdras tout...
+          <br><br>
+          <strong>La solution :</strong> Utilise le bouton <strong>"💾 Sauvegarder"</strong> régulièrement (par exemple une fois par semaine) pour télécharger un fichier de sauvegarde sur ton ordinateur/cloud.
         <br><br>
         Ainsi, en cas de problème, ou si tu change d'appareil ou de navigateur, tu pourras utiliser <strong>"📂 Charger"</strong> pour tout importer et récupérer.
       </p>
+        </p>
+      </div>
 
-      <div style="display:flex; justify-content:flex-end; margin-top:20px;">
-        <button id="btn-info-ok" class="nav-button">J'ai compris</button>
+      <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+      <div>
+        <h3 style="color: #1565c0; font-size: 16px; margin-bottom: 12px;">💡 Astuces d'utilisation</h3>
+        
+        <ul style="list-style: none; padding: 0; font-size: 14px; color: #444; display: flex; flex-direction: column; gap: 12px;">
+          
+          <li style="display: flex; gap: 10px; align-items: flex-start;">
+            <span style="font-size: 18px;">⌨️</span>
+            <div>
+              <strong>Validation rapide :</strong><br>
+              Tu peux appuyer sur la touche <code>Entrée</code> de ton clavier pour valider une date ou fermer une popup de confirmation sans utiliser la souris.
+            </div>
+          </li>
+
+          <li style="display: flex; gap: 10px; align-items: flex-start;">
+    <span style="font-size: 18px;">🔍</span>
+    <div>
+      <strong>Recherche puissante :</strong><br>
+      La barre de recherche fonctionne avec les titres mais aussi les numéros (ex: tape "25" pour trouver la GEU). <br>
+      <em>Astuce :</em> Coche "ceux appris seulement" pour chercher uniquement dans tes fiches validées.
+    </div>
+  </li>
+
+        <li style="display: flex; gap: 10px; align-items: flex-start;">
+    <span style="font-size: 18px;">🌙</span>
+    <div>
+      <strong>Mode Sombre :</strong><br>
+      Pour reposer tes yeux (surtout lors des révisions tardives), clique sur la lune en haut de l'écran. L'interface passera en couleurs sombres et douces.
+    </div>
+  </li>
+
+  <li style="display: flex; gap: 10px; align-items: flex-start;">
+    <span style="font-size: 18px;">✨</span>
+    <div>
+      <strong>Besoin de force ?</strong><br>
+      Un coup de mou ? Le bouton <em>"Phrase de motivation"</em> est là pour te rebooster. Il analyse ta progression réelle pour te donner un message personnalisé et encourageant !
+    </div>
+  </li>
+
+  <li style="display: flex; gap: 10px; align-items: flex-start;">
+    <span style="font-size: 18px;">🔔</span>
+    <div>
+      <strong>Quoi de neuf ?</strong><br>
+      Le site évolue souvent ! Si tu vois le bouton <em>"Nouveautés"</em>, clique dessus pour voir les dernières améliorations.
+    </div>
+  </li>
+
+          <li style="display: flex; gap: 10px; align-items: flex-start;">
+            <span style="font-size: 18px;">🗓️</span>
+            <div>
+              <strong>Gérer les imprévus :</strong><br>
+              Dans l'onglet Planning, si tu ne peux pas faire une révision prévue, clique sur <em>"Pas aujourd'hui"</em>. Cela la décalera simplement à demain sans perturber tout ton rythme futur (J+7 restera J+7).
+            </div>
+          </li>
+
+  <li style="display: flex; gap: 10px; align-items: flex-start;">
+    <span style="font-size: 18px;">⚙️</span>
+    <div>
+      <strong>Rythme personnalisé :</strong><br>
+      Tu peux changer les intervalles de révision (J+1, J+3...) via le bouton <em>Paramètres</em>. Attention, cela recalculera toutes tes futures dates !
+    </div>
+  </li>
+
+        <li style="display: flex; gap: 10px; align-items: flex-start;">
+    <span style="font-size: 18px;">📏</span>
+    <div>
+      <strong>Affichage sur mesure :</strong><br>
+      En bas de la page planning, tu peux régler la largeur du planning et la longueur des titres. Pratique si tu as un grand écran large ou si tu veux voir les titres en entier !
+    </div>
+  </li>
+
+  <li style="display: flex; gap: 10px; align-items: flex-start;">
+    <span style="font-size: 18px;">🔢</span>
+    <div>
+      <strong>Comprendre les codes :</strong><br>
+      <em>(n°3, J+7)</em> signifie : "C'est la 3ème re-révision de ce chapitres, 7 jours après que tu l'ai appris". C'est la méthode des répétitions espacées !
+    </div>
+  </li>
+        
+        <li style="display: flex; gap: 10px; align-items: flex-start;">
+    <span style="font-size: 18px;">🧨</span>
+    <div>
+      <strong>La Dette (Retard) :</strong><br>
+      C'est le nombre total de re-révisions que tu aurais dû faire avant aujourd'hui. 
+      <br><em>Conseil :</em> Ne laisse pas ce chiffre exploser. Essaie de le garder proche de 0 pour ne pas être submergé.
+    </div>
+  </li>
+
+  <li style="display: flex; gap: 10px; align-items: flex-start;">
+    <span style="font-size: 18px;">🔮</span>
+    <div>
+      <strong>Fin estimée :</strong><br>
+      Cette date est calculée mathématiquement selon ta vitesse réelle actuelle (Chapitres appris / jour). 
+      Si tu accélères le rythme, la date se rapprochera automatiquement !
+    </div>
+  </li>
+
+        </ul>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:25px;">
+        <button id="btn-info-ok" class="nav-button" style="padding: 8px 20px; font-size: 14px;">J'ai compris</button>
       </div>
     </div>
   </div>
@@ -201,6 +311,19 @@
       
       <!-- C'EST ICI QUE TU AJOUTES TES PROCHAINES MISES A JOUR -->
       <!-- Copie ce bloc "changelog-item" pour en ajouter une nouvelle en haut -->
+
+      <div class="changelog-item">
+        <div class="changelog-date">05 Décembre 2025</div>
+        <h4 class="changelog-version">Version 2.3 - L'Expérience Utilisateur 🚀</h4>
+        <ul class="changelog-details">
+          <li>📊 <strong>Statistiques Précises :</strong> Séparation claire des données entre <em>Chapitres appris</em> et <em>Re-révisions faites</em> pour un meilleur suivi.</li>
+          <li>🌪️ <strong>Super-Tris :</strong> Ajout de nombreux tris pour les <strong>Chapitres</strong> (Urgence, Complexité, Date...) et pour les <strong>Matières</strong> (Volume, Progression inversée...).</li>
+          <li>🛠️ <strong>Correctifs & UI :</strong> Réparation de l'affichage du bandeau (Header), meilleur placement des boutons , regroupement propre de la barre de recherche et tailles d'écrans plus petits pris en compte dans l'interface.</li>
+          <li>💾 <strong>Mémoire :</strong> Le site se souvient désormais de tes préférences de tri même quand tu quittes la page.</li>
+          <li>✨ <strong>Fluidité :</strong> Les barres de progression ont maintenant une animation douce et satisfaisante au chargement.</li>
+          <li>ℹ️ <strong>Infos & Astuces :</strong> La fenêtre d'information a été enrichie avec des conseils pour maîtriser l'outil.</li>
+        </ul>
+      </div>
 
       <div class="changelog-item">
         <div class="changelog-date">04 Décembre 2025</div>

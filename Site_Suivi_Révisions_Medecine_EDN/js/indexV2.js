@@ -148,7 +148,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const progressFill = document.createElement("div");
     progressFill.className = "modal-progress-fill";
-    progressFill.style.width = percentReviews + "%";
+    // 1. On la met à 0% au départ
+    progressFill.style.width = "0%"; 
+
+    // 2. On attend 50 millisecondes pour lancer l'animation vers le vrai pourcentage
+    setTimeout(() => {
+      progressFill.style.width = percentReviews + "%";
+    }, 50);
 
     progressBg.appendChild(progressFill);
     progressContainer.appendChild(progressLabel);
@@ -213,6 +219,8 @@ document.addEventListener("DOMContentLoaded", () => {
         checkbox.addEventListener("change", () => {
           state = setReviewDone(chapterId, r.index, checkbox.checked);
           openChapterModal(chapterId);
+          construireListe();
+          applyFilters();
         });
 
         li.appendChild(checkbox);
@@ -244,9 +252,102 @@ document.addEventListener("DOMContentLoaded", () => {
   const liParId = {};
   const checkboxParId = {};
 
+  // --- GESTION DU TRI AVEC MÉMOIRE ---
+const sortSelect = document.getElementById("chapter-sort");
+
+// 1. Au chargement : on remet le dernier tri choisi (s'il existe)
+if (sortSelect) {
+  const savedSort = localStorage.getItem("pref_chapter_sort");
+  if (savedSort) {
+    sortSelect.value = savedSort;
+  }
+
+  // 2. Au changement : on sauvegarde et on applique
+  sortSelect.addEventListener("change", () => {
+    localStorage.setItem("pref_chapter_sort", sortSelect.value);
+    construireListe();
+    applyFilters();
+  });
+}
+
   function construireListe() {
     liste.innerHTML = "";
-    CHAPITRES.forEach(chap => {
+    
+    // 1. Création d'une copie triable
+    let sortedChapters = [...CHAPITRES];
+    const sortValue = sortSelect ? sortSelect.value : "id-asc";
+
+    // 2. Application du tri
+    sortedChapters.sort((a, b) => {
+      const stA = state.chapters[a.id];
+      const stB = state.chapters[b.id];
+
+      // --- 1. TRI PAR NUMÉRO (Ascendant / Descendant) ---
+      if (sortValue === "id-asc") return a.id - b.id;
+      if (sortValue === "id-desc") return b.id - a.id;
+
+      // --- 2. TRI PAR DATE D'APPRENTISSAGE ---
+      if (sortValue === "date-desc" || sortValue === "date-asc") {
+        // Règle : Les validés TOUJOURS en haut
+        if (stA.completed !== stB.completed) {
+          return stA.completed ? -1 : 1;
+        }
+        // Si les deux sont faits, on trie par date d'apprentissage
+        if (stA.completed) {
+          const dateA = new Date(stA.learnedDate).getTime();
+          const dateB = new Date(stB.learnedDate).getTime();
+          if (sortValue === "date-desc") return dateB - dateA; // Récents en haut
+          if (sortValue === "date-asc")  return dateA - dateB; // Anciens en haut
+        }
+        return a.id - b.id;
+      }
+
+      // --- 3. TRI PAR STATUT (Fait / Pas fait) ---
+      if (sortValue === "status") {
+        if (stA.completed !== stB.completed) return stA.completed ? -1 : 1;
+        return a.id - b.id;
+      }
+
+      // --- 4. IDÉE N°1 : URGENCE (Prochaine révision la plus proche) ---
+      if (sortValue === "next-review") {
+        // Fonction pour trouver la date de la prochaine révision
+        const getNextDate = (st) => {
+          if (!st.completed || !st.reviews) return "9999-99-99"; // Pas fait = Tout en bas
+          const next = st.reviews.find(r => !r.done);
+          if (!next) return "8888-88-88"; // Fait mais fini (plus de révision) = En bas (mais avant les non faits)
+          return next.date;
+        };
+
+        const nextA = getNextDate(stA);
+        const nextB = getNextDate(stB);
+
+        if (nextA !== nextB) {
+          // Tri croissant (Date la plus petite/proche en premier)
+          return nextA.localeCompare(nextB);
+        }
+        return a.id - b.id;
+      }
+
+      // --- 5. IDÉE N°2 : COMPLEXITÉ (Nombre de révisions déjà effectuées) ---
+      if (sortValue === "review-count") {
+        // On compte combien de cases "faites" il y a
+        const getCount = (st) => {
+          if (!st.completed || !st.reviews) return -1; // Non fait
+          return st.reviews.filter(r => r.done).length;
+        };
+
+        const countA = getCount(stA);
+        const countB = getCount(stB);
+
+        // Tri décroissant : Ceux qu'on a le plus bossé en haut
+        if (countA !== countB) return countB - countA;
+        return a.id - b.id;
+      }
+
+      return 0;
+    });
+      
+    sortedChapters.forEach(chap => {
       const st = state.chapters[chap.id];
 
       const li = document.createElement("li");

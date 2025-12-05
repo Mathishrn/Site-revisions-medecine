@@ -685,7 +685,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const progressFill = document.createElement("div");
     progressFill.className = "modal-progress-fill";
-    progressFill.style.width = percentReviews + "%";
+    // 1. On la met à 0% au départ
+    progressFill.style.width = "0%"; 
+
+    // 2. On attend 50 millisecondes pour lancer l'animation vers le vrai pourcentage
+    setTimeout(() => {
+      progressFill.style.width = percentReviews + "%";
+    }, 50);
 
     progressBg.appendChild(progressFill);
     progressContainer.appendChild(progressLabel);
