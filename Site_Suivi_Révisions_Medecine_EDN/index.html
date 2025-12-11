@@ -6,6 +6,9 @@
   <title>Suivi révisions médecine – Suivi général</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="css/styleV2.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="theme-color" content="#2f7e5f">
 </head>
 
 <!-- BOUTON FLOTTANT FEEDBACK -->
@@ -328,6 +331,9 @@
           <li>🧠 <strong>Smart Reschedule :</strong> Le nouvel algorithme est intelligent : il <strong>saute automatiquement</strong> tes jours bloqués pour placer tes révisions, sans jamais effacer ton historique passé.</li>
           <li>⚙️ <strong>Configuration Totale :</strong> La fenêtre de paramètres a été refaite à neuf. Elle est maintenant accessible depuis le Planning et permet de gérer finement tes dates.</li>
           <li>🔄 <strong>Cohérence Temporelle :</strong> Si tu coches un chapitre appris <em>avant</em> ta date de début officielle, le site te propose d'ajuster ton planning automatiquement pour rester logique.</li>
+          <li>🐛 <strong>Logique "Pas aujourd'hui" :</strong> Si tu as du retard et que tu cliques sur ce bouton, la révision est bien reportée à <em>demain</em> (et non plus à une date qui reste dans le passé).</li>
+          <li>📱 <strong>Interface petis écrans :</strong> Le menu du haut et le planning du mois sont réparés.</li>
+          <li>🎨 <strong>Sécurité + corrections beugs.</li>
           </ul>
       </div>
 
@@ -465,6 +471,16 @@
     </div>
   </div>
 </div>
+
+<script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(reg => console.log('Service Worker enregistré !'))
+          .catch(err => console.log('Echec Service Worker :', err));
+      });
+    }
+  </script>
 
 </body>
 </html>

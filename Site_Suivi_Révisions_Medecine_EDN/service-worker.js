@@ -1,4 +1,4 @@
-const CACHE_NAME = "suivi-med-v2";
+const CACHE_NAME = "suivi-med-v2.4.3-fixfinal";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -17,6 +17,7 @@ const ASSETS_TO_CACHE = [
 
 // 1. Installation : On met tout en cache
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log("[Service Worker] Mise en cache globale");

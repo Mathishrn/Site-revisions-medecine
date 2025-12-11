@@ -381,7 +381,7 @@ function showToast(message) {
   toast.classList.add("show");
   setTimeout(() => {
     toast.classList.remove("show");
-  }, 5000);
+  }, 2000);
 }
 
 // --- STATS HELPER ---
@@ -619,15 +619,15 @@ function toggleReviewSkipToday(chapterId, reviewIndex) {
   const review = st.reviews.find(r => r.index === reviewIndex);
   if (!review || !review.date) return state;
   
-  // CORRECTION : On utilise le Smart Reschedule
+  // CORRECTION MAJEURE : On se base sur AUJOURD'HUI, pas sur la date de la révision
   const settings = getSettings();
-  const currentDate = parseDate(review.date);
+  const today = new Date(); // Date réelle système
   
-  // On commence à chercher à partir de demain
-  const nextDay = addDays(currentDate, 1);
+  // On commence à chercher à partir de demain par rapport à la RÉALITÉ
+  const tomorrow = addDays(today, 1);
   
   // On trouve la prochaine date VRAIMENT disponible (hors dimanches/vacances)
-  const finalDate = findNextAvailableDate(nextDay, settings);
+  const finalDate = findNextAvailableDate(tomorrow, settings);
   
   review.date = formatDateISO(finalDate);
   review.done = false;

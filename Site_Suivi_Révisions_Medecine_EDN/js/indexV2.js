@@ -678,6 +678,11 @@ btnSave.addEventListener("click", async () => { // Note l'ajout de "async" ici
   });
 
   function mergeWithCurrentChapitres(oldState) {
+    // SÉCURITÉ AJOUTÉE
+    if (!oldState || !oldState.chapters) {
+        console.warn("Fichier de sauvegarde ancien ou invalide, initialisation à vide.");
+        return initEmptyState(); // Assure-toi que cette fonction est accessible ou copie la logique
+    }
     const newState = {
       globalStartDate: oldState.globalStartDate || todayISO(),
       chapters: {}

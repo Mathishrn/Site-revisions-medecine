@@ -356,10 +356,10 @@ document.addEventListener("DOMContentLoaded", () => {
       
       // --- TRI : Faites en bas ---
       tasks.sort((a, b) => {
-        // Si statut 'done' différent, celui qui est 'true' va après (1)
         if (a.done !== b.done) return a.done ? 1 : -1;
-        // Sinon tri par index
-        return a.reviewIndex - b.reviewIndex;
+        // Ajout d'un tri secondaire par ID de chapitre pour que l'ordre ne bouge jamais
+        if (a.reviewIndex !== b.reviewIndex) return a.reviewIndex - b.reviewIndex;
+        return a.chapterId - b.chapterId; 
       });
 
       if (tasks.length === 0) {
@@ -499,7 +499,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // --- TRI : Faites en bas ---
       tasks.sort((a, b) => {
         if (a.done !== b.done) return a.done ? 1 : -1;
-        return a.reviewIndex - b.reviewIndex;
+        // Ajout d'un tri secondaire par ID de chapitre pour que l'ordre ne bouge jamais
+        if (a.reviewIndex !== b.reviewIndex) return a.reviewIndex - b.reviewIndex;
+        return a.chapterId - b.chapterId; 
       });
 
       tasks.forEach(t => {

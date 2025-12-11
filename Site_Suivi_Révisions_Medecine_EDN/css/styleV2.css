@@ -624,15 +624,19 @@ button:active {
 
 /* Vue mensuelle (AJOUT SCROLL & TAILLE FIXE) */
 
+/* Conteneur principal qui autorise le scroll si ça dépasse */
 .month-view {
   background: #fff;
   border-radius: 12px;
   padding: 10px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  overflow-x: auto; /* <--- MAGIE : Scroll horizontal activé */
 }
 
+/* La table force une largeur minimale pour ne pas s'écraser */
 .month-grid {
   width: 100%;
+  min-width: 800px; /* <--- IMPORTANT : Force une largeur correcte */
   border-collapse: collapse;
   font-size: 12px;
   table-layout: fixed; 
@@ -646,11 +650,17 @@ button:active {
 }
 
 .month-grid td {
+  /* On garde la hauteur fixe */
   height: 200px;
   min-height: 200px;
   max-height: 200px;
-  overflow-y: auto; /* <--- C'est ça qui permet de scroller DANS la case */
-  display: block;   /* Assure que le scroll fonctionne bien */
+  
+  /* On enlève 'display: block' et 'overflow' ici pour restaurer la grille */
+  vertical-align: top;
+  border: 1px solid #e0e0e0;
+  padding: 4px;
+  
+  /* IMPORTANT : C'est la liste à l'intérieur (.month-day-list) qui gérera le scroll */
 }
 
 .month-grid th {
@@ -2209,61 +2219,67 @@ body.dark-mode div[style*="background:#ffebee"] {
 /* --- GESTION RESPONSIVE (MOBILE / TABLETTE) --- */
 
 /* Dès que l'écran fait moins de 900px de large */
+/* --- RESPONSIVE : GESTION DU HEADER (Tablettes & Mobiles) --- */
 @media (max-width: 950px) {
   
-  /* 1. On passe le haut du header en mode "Colonne" (vertical) */
+  /* 1. On passe le haut du header en colonne verticale propre */
   .header-top {
     flex-direction: column;
     align-items: center;
-    gap: 15px;
-    padding-bottom: 10px;
+    gap: 12px;
+    padding-bottom: 15px;
+    position: relative; /* Important pour garder la référence */
   }
 
-  /* 2. On annule le positionnement absolu du bouton Nouveautés */
-  .theme-toggle-btn2 {
-    position: static !important; /* Redevient un élément normal */
-    transform: none !important;
-    margin: 5px auto; /* Centré */
-    order: 3; /* On décide de l'afficher en 3ème position */
+  /* 2. Le titre prend toute la largeur et se centre */
+  .header-title-group {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 5px;
+    order: 2; /* Le titre en deuxième position visuelle */
   }
 
-  /* 3. On annule le positionnement absolu du bouton Mode Sombre */
+  /* 3. Le bouton Mode Sombre (Lune) : On le fixe en haut à droite pour ne pas gêner */
   .theme-toggle-btn {
-    position: static !important;
+    position: absolute !important;
+    top: 15px;
+    right: 15px;
+    left: auto; /* On annule le centrage 50% du mode PC */
+    transform: none !important;
+    margin: 0;
+    order: 1; /* Non utilisé car en absolute, mais bonne pratique */
+  }
+
+  /* 4. Le bouton Nouveautés : On le remet dans le flux normal, centré */
+  .theme-toggle-btn2 {
+    position: static !important; /* Plus de flottement bizarre */
     transform: none !important;
     margin: 5px auto;
-    order: 2; /* Juste avant les nouveautés */
-  }
-
-  /* 4. On s'assure que le titre et le bouton paramètre restent en haut */
-  .header-title-group {
-    align-items: center;
-    width: 100%;
-    order: 1;
-    margin-bottom: 10px;
+    width: fit-content;
+    order: 3; /* Juste sous le titre */
   }
   
-  /* 5. On ajuste la navigation pour qu'elle prenne de la place si besoin */
+  /* 5. La navigation (les liens) en bas */
   .main-nav {
     flex-wrap: wrap;
     justify-content: center;
+    margin-top: 5px;
+    width: 100%;
     order: 4;
-    margin-top: 10px;
   }
 
-  /* 6. On gère le bas du header (Motivation + Paramètres du bas) */
+  /* Gestion du bas du header */
   .header-bottom-row {
-    flex-direction: column; /* On empile verticalement */
-    gap: 15px;
-    margin-top: 20px;
+    flex-direction: column;
+    gap: 12px;
   }
-
-  /* On remet les boutons du bas dans le flux normal */
+  
   .header .motivation-btn,
   .header > #btn-settings {
     position: static !important;
     transform: none !important;
-    width: fit-content;
     margin: 0 auto;
   }
 }
@@ -2466,9 +2482,18 @@ body.dark-mode .sort-select:hover {
 .sort-group {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   font-size: 14px;
   font-weight: 600;
+  
+  /* C'est ça qui empêche le texte de passer à la ligne */
+  white-space: nowrap; 
+  flex-shrink: 0;
+}
+
+.sort-group label {
+  white-space: nowrap;
+  margin: 0; /* Évite les marges parasites */
 }
 
 /* Checkbox compacte */
