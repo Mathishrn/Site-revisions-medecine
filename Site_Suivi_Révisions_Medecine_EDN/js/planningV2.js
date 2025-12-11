@@ -371,10 +371,6 @@ document.addEventListener("DOMContentLoaded", () => {
           li.className = "week-review";
           
           if (t.done) li.classList.add("done");
-          if (t.status === "skipped") {
-            li.classList.add("failed");
-            li.classList.add("moved-original");
-          }
           if (t.moved) li.classList.add("moved-original");
           if (t.linkedFrom !== null || t.skipFrom !== null) {
             li.classList.add("moved-child");
@@ -510,10 +506,6 @@ document.addEventListener("DOMContentLoaded", () => {
         li.className = "month-review";
         
         if (t.done) li.classList.add("done");
-        if (t.status === "skipped") {
-          li.classList.add("failed");
-          li.classList.add("moved-original");
-        }
         if (t.moved) li.classList.add("moved-original");
         if (t.linkedFrom !== null || t.skipFrom !== null) {
           li.classList.add("moved-child");

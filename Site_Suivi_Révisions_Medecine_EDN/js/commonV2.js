@@ -1,24 +1,5 @@
 // js/commonV2.js
 
-/* --- PROTECTION ANTI-COPIE --- */
-document.addEventListener('DOMContentLoaded', () => {
-  // 1. Bloquer le clic droit (sauf sur inputs)
-  document.addEventListener('contextmenu', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    e.preventDefault();
-  });
-
-  // 2. Bloquer raccourcis (Ctrl+C, U, F12)
-  document.addEventListener('keydown', (e) => {
-    if (
-      (e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.key === 'u' || e.key === 'U')) ||
-      e.key === 'F12'
-    ) {
-      e.preventDefault();
-    }
-  });
-});
-
 // --- UTILITAIRES DATES ---
 
 function parseDate(str) {
@@ -125,6 +106,13 @@ function findNextAvailableDate(targetDate, settings) {
     d = addDays(d, 1);
     safeGuard++;
   }
+
+  // Si on a dépassé la limite, c'est que tout est bloqué.
+  // On retourne la date cible originale pour éviter un crash ou une date en 2030.
+  if (safeGuard >= 730) {
+      return new Date(targetDate); 
+  }
+
   return d;
 }
 
@@ -252,11 +240,6 @@ function generateReviewSchedule(learnedDateStr) {
  * Préserve l'historique (ce qui est fait reste fait)
  * Applique les nouveaux intervalles et exclusions sur le futur
  */
-/**
- * RECALCUL GLOBAL INTELLIGENT (CORRIGÉ V3.2)
- * Fusionne l'historique réel avec le nouveau planning théorique
- * basé sur les jours (offsets) et non plus sur les index.
- */
 function recalculateAllSchedules() {
   let state = loadState();
   const settings = getSettings();
@@ -272,23 +255,27 @@ function recalculateAllSchedules() {
     const learnedDate = parseDate(st.learnedDate);
     
     // 1. Récupérer l'historique (ce qui est DÉJÀ FAIT)
-    // On garde précieusement tout ce qui est coché.
     const history = st.reviews.filter(r => r.done);
 
-    // 2. Trouver le "niveau" actuel (le plus grand J+ validé)
-    // Ex: Si j'ai fait J+1, J+3, J+14 -> maxOffsetDone = 14
+    // 2. Récupérer les "Préservés" (NON FAIT mais DÉPLACÉ ou REPORTÉ)
+    // C'est ici qu'on corrige : on garde 'moved' ET 'skipped'
+    const preserved = st.reviews.filter(r => !r.done && (r.moved || r.status === 'skipped'));
+
+    // 3. Calculer le niveau actuel (le plus grand J+ validé)
     let maxOffsetDone = 0;
     if (history.length > 0) {
-      // On cherche le max dans l'historique
       maxOffsetDone = Math.max(...history.map(r => r.offsetDays));
     }
 
-    // 3. Calculer le futur basé sur les NOUVEAUX intervalles
-    // On ne génère que les révisions dont le J+ est STRICTEMENT SUPÉRIEUR
-    // à ce qu'on a déjà fait.
-    // Ex: Si maxOffsetDone = 14 et nouveaux offsets = [1, 3, 7, 25, 60]
-    // On ne garde que [25, 60].
-    const futureOffsets = offsets.filter(off => off > maxOffsetDone);
+    // 4. Identifier les Offsets qui sont déjà "réservés" par un report
+    // (Pour ne pas recréer un J+3 théorique si on a déjà un J+3 reporté)
+    const preservedOffsets = preserved.map(r => r.offsetDays);
+
+    // 5. Calculer les futurs Offsets à générer
+    // Condition : > au dernier fait ET pas déjà dans les préservés
+    const futureOffsets = offsets.filter(off => 
+      off > maxOffsetDone && !preservedOffsets.includes(off)
+    );
 
     const futureReviews = [];
 
@@ -302,22 +289,24 @@ function recalculateAllSchedules() {
       if (finalDate > endDate) break;
       
       futureReviews.push({
-        // L'index sera recalculé juste après pour être propre
-        index: 0, 
+        index: 0, // sera recalculé
         offsetDays: offset,
         date: formatDateISO(finalDate),
-        done: false
+        done: false,
+        status: "normal"
       });
     }
 
-    // 4. Fusionner : Historique + Futur
-    const newSchedule = [...history, ...futureReviews];
+    // 6. Fusionner tout : Historique + Préservés + Nouveaux Futurs
+    const newSchedule = [...history, ...preserved, ...futureReviews];
 
-    // 5. Renumérotation propre des index (1, 2, 3...)
-    // Pour que l'affichage soit cohérent (ex: "Révision n°4, Révision n°5"...)
-    // même si on a sauté des étapes dans la nouvelle config.
-    newSchedule.sort((a, b) => a.offsetDays - b.offsetDays); // Tri par jour (sécurité)
+    // 7. Tri Chronologique
+    newSchedule.sort((a, b) => {
+      if (a.date === b.date) return 0;
+      return a.date < b.date ? -1 : 1;
+    });
     
+    // 8. Renumérotation propre (1, 2, 3...)
     newSchedule.forEach((r, idx) => {
       r.index = idx + 1;
     });
@@ -624,11 +613,20 @@ function toggleReviewSkipToday(chapterId, reviewIndex) {
   const review = st.reviews.find(r => r.index === reviewIndex);
   if (!review || !review.date) return state;
   
+  // CORRECTION : On utilise le Smart Reschedule
+  const settings = getSettings();
   const currentDate = parseDate(review.date);
-  const newDate = addDays(currentDate, 1);
-  review.date = formatDateISO(newDate);
+  
+  // On commence à chercher à partir de demain
+  const nextDay = addDays(currentDate, 1);
+  
+  // On trouve la prochaine date VRAIMENT disponible (hors dimanches/vacances)
+  const finalDate = findNextAvailableDate(nextDay, settings);
+  
+  review.date = formatDateISO(finalDate);
   review.done = false;
-  review.status = "normal";
+  review.status = "skipped"; // Petit marquage pour dire qu'on a sauté
+  
   saveState(state);
   return state;
 }

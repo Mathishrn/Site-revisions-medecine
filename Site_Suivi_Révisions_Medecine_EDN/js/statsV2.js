@@ -302,6 +302,12 @@ function renderActivityChart(allActionsDates) {
   const ctx = document.getElementById('activityChart');
   if (!ctx) return;
 
+  // CORRECTION : Vérifier si Chart est chargé
+  if (typeof Chart === 'undefined') {
+      ctx.parentElement.innerHTML = "<div style='text-align:center; padding:30px; color:#999; font-size:13px;'>Graphique indisponible (hors ligne)</div>";
+      return;
+  }
+
   const labels = [];
   const dataCounts = [];
   const today = new Date();
@@ -341,6 +347,12 @@ function renderActivityChart(allActionsDates) {
 function renderWeekdayChart(allActionsDates, learnedDates) {
     const ctx = document.getElementById('weekdayChart');
     if (!ctx) return;
+
+    // CORRECTION : Vérifier si Chart est chargé
+  if (typeof Chart === 'undefined') {
+      ctx.parentElement.innerHTML = "<div style='text-align:center; padding:30px; color:#999; font-size:13px;'>Graphique indisponible (hors ligne)</div>";
+      return;
+  }
 
     // 1. Calculer le total par jour
     const totalActionsByDay = [0,0,0,0,0,0,0];
@@ -417,6 +429,12 @@ function renderWeekdayChart(allActionsDates, learnedDates) {
 function renderFutureLoadChart(allReviewsFuture) {
     const ctx = document.getElementById('futureLoadChart');
     if (!ctx) return;
+
+    // CORRECTION : Vérifier si Chart est chargé
+  if (typeof Chart === 'undefined') {
+      ctx.parentElement.innerHTML = "<div style='text-align:center; padding:30px; color:#999; font-size:13px;'>Graphique indisponible (hors ligne)</div>";
+      return;
+  }
 
     const labels = [];
     const dataCounts = [];

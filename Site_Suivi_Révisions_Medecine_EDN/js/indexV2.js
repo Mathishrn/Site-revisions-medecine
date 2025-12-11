@@ -26,8 +26,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Fonction pour retirer les accents
   function removeAccents(str) {
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
+    return str
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Enlève les accents classiques
+      .replace(/œ/g, "oe") // Gère le œ
+      .replace(/æ/g, "ae") // Gère le æ
+      .trim();
+  }
 
   async function askFirstLearningDate(previousDateStr) {
     const dateModal = document.getElementById("date-modal");

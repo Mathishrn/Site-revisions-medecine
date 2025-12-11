@@ -1856,4 +1856,4 @@ const END_DATE_STR = "2026-08-30";
 const START_DATE_STR = "2025-09-01";
 
 // Intervalles J+ pour les re-révisions
-const REVIEW_OFFSETS_DAYS = [1, 3, 7, 14, 30, 45, 60, 90, 120, 180, 240, 300];
+const REVIEW_OFFSETS_DAYS = [1, 3, 7, 14, 25, 50, 100, 160, 220, 300];
