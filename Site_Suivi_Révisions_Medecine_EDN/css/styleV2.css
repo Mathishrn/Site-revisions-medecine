@@ -649,7 +649,8 @@ button:active {
   height: 200px;
   min-height: 200px;
   max-height: 200px;
-  overflow: hidden;
+  overflow-y: auto; /* <--- C'est ça qui permet de scroller DANS la case */
+  display: block;   /* Assure que le scroll fonctionne bien */
 }
 
 .month-grid th {

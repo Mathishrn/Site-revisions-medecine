@@ -250,6 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
       skipBtn.textContent = "Pas aujourd’hui";
       skipBtn.addEventListener("click", () => {
         state = window.toggleReviewSkipToday(item.chapterId, item.reviewIndex);
+        showToast("Révision reportée à demain ! 📅");
         renderTodayReviews();
         renderWeekView();
         renderMonthView();

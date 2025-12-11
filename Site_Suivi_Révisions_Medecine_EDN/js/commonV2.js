@@ -98,20 +98,23 @@ function isDateBlocked(dateObj, settings) {
  * SMART RESCHEDULE : Trouve la prochaine date libre
  */
 function findNextAvailableDate(targetDate, settings) {
+  // SÉCURITÉ : Si l'utilisateur a bloqué les 7 jours de la semaine
+  if (settings.blockedWeekdays && settings.blockedWeekdays.length >= 7) {
+    // On ne tente même pas de décaler, sinon ça boucle à l'infini
+    return new Date(targetDate);
+  }
+
   let d = new Date(targetDate);
-  // Sécurité : on ne cherche pas plus de 365 jours pour éviter boucle infinie
   let safeGuard = 0;
   
+  // On cherche un jour libre, mais on s'arrête si on a fait le tour d'une année (bug safety)
   while (isDateBlocked(d, settings) && safeGuard < 365) {
     d = addDays(d, 1);
     safeGuard++;
   }
-
-  // Si on a dépassé la limite, c'est que tout est bloqué.
-  // On retourne la date cible originale pour éviter un crash ou une date en 2030.
-  if (safeGuard >= 730) {
-      return new Date(targetDate); 
-  }
+  
+  // Si on n'a rien trouvé après 365 essais, on rend la date originale
+  if (safeGuard >= 365) return new Date(targetDate);
 
   return d;
 }
@@ -143,8 +146,10 @@ function loadState() {
     try {
       state = JSON.parse(raw);
     } catch (e) {
-      console.error("Erreur JSON, réinitialisation du state", e);
-      state = initEmptyState();
+      console.error("CRITICAL: JSON corrompu", e);
+      // Protection critique : On avertit l'utilisateur avant d'écraser quoi que ce soit
+      alert("⚠️ ALERTE CRITIQUE ⚠️\n\nTes données locales semblent corrompues. Le site va charger un profil vide par sécurité pour ne pas planter, MAIS n'enregistre rien par dessus pour l'instant.\n\nEssaie de recharger la page ou contacte le support si tu as une sauvegarde.");
+      return initEmptyState(); 
     }
   } else {
     state = initEmptyState();
@@ -154,7 +159,7 @@ function loadState() {
     state.chapters = {};
   }
 
-  // Initialisation lazy
+  // Initialisation lazy des chapitres manquants
   CHAPITRES.forEach(ch => {
     if (!state.chapters[ch.id]) {
       state.chapters[ch.id] = {
@@ -169,7 +174,7 @@ function loadState() {
     state.globalStartDate = todayISO();
   }
 
-  // Correction de cohérence
+  // Nettoyage de cohérence (si marqué 'completed' mais sans date, etc.)
   CHAPITRES.forEach(ch => {
     const st = state.chapters[ch.id];
     if (!st) return;
@@ -194,6 +199,7 @@ function loadState() {
     }
   });
 
+  // On sauvegarde le state nettoyé (sauf si c'était le cas d'erreur critique géré plus haut)
   saveState(state);
   return state;
 }

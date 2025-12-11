@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const state = loadState();
   updateDeadlineBox(state);
 
+  // 1. Motivation
   const motivationBtn = document.getElementById("btn-motivation");
   const motivationBox = document.getElementById("motivation-box");
   if (motivationBtn && motivationBox) {
@@ -10,16 +11,27 @@ document.addEventListener("DOMContentLoaded", () => {
       motivationBox.textContent = msg;
       motivationBox.style.display = "block";
     });
-
-  const sortSelect = document.getElementById("subject-sort");
-if (sortSelect) {
-  sortSelect.addEventListener("change", () => {
-    const state = loadState();
-    applySubjectSortAndRender(state);
-  });
-}
   }
 
+  // 2. Gestion du Tri avec Sauvegarde
+  const sortSelect = document.getElementById("subject-sort");
+  if (sortSelect) {
+    // A. Charger la préférence
+    const savedSort = localStorage.getItem("pref_subject_sort");
+    if (savedSort) {
+      sortSelect.value = savedSort;
+    }
+    
+    // B. Sauvegarder au changement
+    sortSelect.addEventListener("change", () => {
+      localStorage.setItem("pref_subject_sort", sortSelect.value);
+      // On recharge le state pour être sûr d'avoir les dernières données
+      const currentState = loadState();
+      applySubjectSortAndRender(currentState);
+    });
+  }
+
+  // 3. Calculs initiaux
   calculateAndRenderStats(state);
 });
 
@@ -110,96 +122,67 @@ function calculateAndRenderStats(state) {
   renderSubjectsCards(sortedAsc.slice(0, 3), "flop-subjects-container", false);
 
 
-  // G. Liste détaillée (MODIFIÉ POUR LE TRI)
-  // On stocke les données brutes dans une variable globale ou accessible
+  // G. Liste détaillée (Stockage Global pour le tri)
   window.cachedSubjectsData = subjectsArray; 
   
-  // On lance le premier rendu (par défaut A-Z)
+  // On lance le premier rendu (avec le tri sauvegardé ou par défaut)
   applySubjectSortAndRender(state);
 }
 
-// --- NOUVELLE FONCTION DE TRI ---
+// --- FONCTION DE TRI ---
 function applySubjectSortAndRender(state) {
   const sortSelect = document.getElementById("subject-sort");
   const sortValue = sortSelect ? sortSelect.value : "name-asc";
   
-  // On travaille sur une copie pour ne pas abîmer l'ordre original
+  if (!window.cachedSubjectsData) return;
+
   let data = [...window.cachedSubjectsData]; 
 
   data.sort((a, b) => {
     switch (sortValue) {
       case "name-asc":
         return a.name.localeCompare(b.name);
-      case "name-desc": // Inverse A-Z
+      case "name-desc": 
         return b.name.localeCompare(a.name);
-        
-      case "percent-desc": // Mieux réussis en haut
+      case "percent-desc": 
         return b.percent - a.percent || a.name.localeCompare(b.name);
-      case "percent-asc": // Moins avancés en haut
+      case "percent-asc": 
         return a.percent - b.percent || a.name.localeCompare(b.name);
-        
-      case "count-desc": // Les plus grosses matières en haut
+      case "count-desc": 
         return b.total - a.total || a.name.localeCompare(b.name);
-      case "count-asc": // Les petites matières en haut
+      case "count-asc": 
         return a.total - b.total || a.name.localeCompare(b.name);
-        
       default:
         return 0;
     }
   });
 
-  // 1. On affiche la liste triée (cela recrée tous les éléments HTML)
   renderSubjectsList(data, state);
 
-  // 2. FIX RECHERCHE : On réapplique immédiatement le filtre si du texte est présent
+  // Ré-appliquer le filtre de recherche si texte présent
   const searchInput = document.getElementById("subject-search");
   if (searchInput && searchInput.value.trim() !== "") {
-    // Cette ligne simule une frappe au clavier pour déclencher ton filtre existant
     searchInput.dispatchEvent(new Event("input"));
   }
 }
-
-// Ajout de l'écouteur d'événement au chargement
-document.addEventListener("DOMContentLoaded", () => {
-  const sortSelect = document.getElementById("subject-sort");
-  if (sortSelect) {
-    const savedSort = localStorage.getItem("pref_subject_sort");
-    if (savedSort) {
-      sortSelect.value = savedSort;
-    }
-    
-    sortSelect.addEventListener("change", () => {
-      // 2. Sauvegarde du nouveau choix
-      localStorage.setItem("pref_subject_sort", sortSelect.value);
-      
-      const state = loadState();
-      applySubjectSortAndRender(state);
-    });
-  }
-  // ... le reste de tes écouteurs ...
-});
 
 // -------------------------------------------------------------------------
 // Helpers KPIs & Projections
 // -------------------------------------------------------------------------
 
 function renderKPIs(learnedDates, state, totalLate) {
-  // --- 1. CONFIGURATION DES DATES ---
   const today = new Date();
-  const currentMonthISO = formatDateISO(today).substring(0, 7); // ex: "2025-12"
+  const currentMonthISO = formatDateISO(today).substring(0, 7); 
   
-  // Trouver le lundi de la semaine courante
   const d = new Date(today);
   const day = d.getDay(); 
   const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
   const monday = new Date(d.setDate(diff));
   const mondayISO = formatDateISO(monday);
 
-  // --- 2. CALCULS APPRENTISSAGE (Nouveaux chapitres) ---
   let learnWeek = 0;
   let learnMonth = 0;
 
-  // learnedDates contient déjà uniquement les dates de 1ère apprentissage (filtré dans calculateAndRenderStats)
   learnedDates.forEach(dateStr => {
     if (dateStr.startsWith(currentMonthISO)) learnMonth++;
     if (dateStr >= mondayISO) learnWeek++;
@@ -207,13 +190,10 @@ function renderKPIs(learnedDates, state, totalLate) {
 
   const totalLearned = learnedDates.length;
 
-
-  // --- 3. CALCULS RÉVISIONS (Re-révisions validées) ---
   let revTotal = 0;
   let revWeek = 0;
   let revMonth = 0;
 
-  // On doit parcourir tout le state pour trouver toutes les reviews FAITES
   CHAPITRES.forEach(ch => {
     const st = state.chapters[ch.id];
     if (st && st.reviews) {
@@ -226,10 +206,7 @@ function renderKPIs(learnedDates, state, totalLate) {
       });
     }
   });
-
-  // --- 4. AFFICHAGE DANS LE DOM ---
   
-  // Bloc Apprentissage
   const elLearnTotal = document.getElementById("kpi-learn-total");
   const elLearnWeek = document.getElementById("kpi-learn-week");
   const elLearnMonth = document.getElementById("kpi-learn-month");
@@ -238,7 +215,6 @@ function renderKPIs(learnedDates, state, totalLate) {
   if (elLearnWeek) elLearnWeek.textContent = learnWeek;
   if (elLearnMonth) elLearnMonth.textContent = learnMonth;
 
-  // Bloc Révisions
   const elRevTotal = document.getElementById("kpi-rev-total");
   const elRevWeek = document.getElementById("kpi-rev-week");
   const elRevMonth = document.getElementById("kpi-rev-month");
@@ -248,16 +224,14 @@ function renderKPIs(learnedDates, state, totalLate) {
   if (elRevWeek) elRevWeek.textContent = revWeek;
   if (elRevMonth) elRevMonth.textContent = revMonth;
 
-  // Retard
   if (elRevLate) {
     elRevLate.textContent = totalLate;
     elRevLate.style.color = totalLate > 0 ? "#c62828" : "#2e7d32";
     if(totalLate === 0) elRevLate.textContent = "0 🎉";
   }
 
-  // On retourne les compteurs "hebdo" globaux (somme des deux) pour les objectifs
   return { 
-    weekCount: learnWeek + revWeek, // Pour la barre d'objectif hebdo
+    weekCount: learnWeek + revWeek, 
     monthCount: learnMonth + revMonth 
   };
 }
@@ -301,8 +275,6 @@ function renderProjections(learnedDates, state) {
 function renderActivityChart(allActionsDates) {
   const ctx = document.getElementById('activityChart');
   if (!ctx) return;
-
-  // CORRECTION : Vérifier si Chart est chargé
   if (typeof Chart === 'undefined') {
       ctx.parentElement.innerHTML = "<div style='text-align:center; padding:30px; color:#999; font-size:13px;'>Graphique indisponible (hors ligne)</div>";
       return;
@@ -343,18 +315,14 @@ function renderActivityChart(allActionsDates) {
   });
 }
 
-// --- Jours Productifs (MOYENNE) ---
 function renderWeekdayChart(allActionsDates, learnedDates) {
     const ctx = document.getElementById('weekdayChart');
     if (!ctx) return;
-
-    // CORRECTION : Vérifier si Chart est chargé
   if (typeof Chart === 'undefined') {
       ctx.parentElement.innerHTML = "<div style='text-align:center; padding:30px; color:#999; font-size:13px;'>Graphique indisponible (hors ligne)</div>";
       return;
   }
 
-    // 1. Calculer le total par jour
     const totalActionsByDay = [0,0,0,0,0,0,0];
     allActionsDates.forEach(iso => {
         const d = parseDate(iso);
@@ -362,12 +330,9 @@ function renderWeekdayChart(allActionsDates, learnedDates) {
         totalActionsByDay[dayIdx]++;
     });
 
-    // 2. Calculer le nombre d'occurrences de chaque jour depuis le début
     const occurrencesByDay = [0,0,0,0,0,0,0];
-    
     let startDate = learnedDates.length > 0 ? parseDate(learnedDates[0]) : new Date();
     const today = new Date(); 
-
     let current = new Date(startDate);
     current.setHours(12,0,0,0);
     const endLoop = new Date(today);
@@ -379,17 +344,14 @@ function renderWeekdayChart(allActionsDates, learnedDates) {
         current.setDate(current.getDate() + 1);
     }
 
-    // 3. Calculer la moyenne
     const averageData = [];
     for(let i=0; i<7; i++) {
         const count = occurrencesByDay[i] > 0 ? (totalActionsByDay[i] / occurrencesByDay[i]) : 0;
         averageData[i] = parseFloat(count.toFixed(1)); 
     }
 
-    // 4. Réorganiser Lun->Dim
     const sundayVal = averageData.shift(); 
     averageData.push(sundayVal);
-
     const labels = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
     new Chart(ctx, {
@@ -416,9 +378,7 @@ function renderWeekdayChart(allActionsDates, learnedDates) {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
-                            return context.raw + " actions en moyenne";
-                        }
+                        label: function(context) { return context.raw + " actions en moyenne"; }
                     }
                 }
             }
@@ -429,8 +389,6 @@ function renderWeekdayChart(allActionsDates, learnedDates) {
 function renderFutureLoadChart(allReviewsFuture) {
     const ctx = document.getElementById('futureLoadChart');
     if (!ctx) return;
-
-    // CORRECTION : Vérifier si Chart est chargé
   if (typeof Chart === 'undefined') {
       ctx.parentElement.innerHTML = "<div style='text-align:center; padding:30px; color:#999; font-size:13px;'>Graphique indisponible (hors ligne)</div>";
       return;
@@ -474,12 +432,10 @@ function renderFutureLoadChart(allReviewsFuture) {
     });
 }
 
-// --- PODIUM + ANIMATION ---
 function renderSubjectsCards(list, containerId, isTop) {
   const container = document.getElementById(containerId);
   if(!container) return;
   container.innerHTML = "";
-  
   container.className = "podium-container";
 
   if (list.length === 0) {
@@ -488,7 +444,6 @@ function renderSubjectsCards(list, containerId, isTop) {
   }
 
   const medals = isTop ? ["🥇", "🥈", "🥉"] : ["⚠️", "🚧", "🐌"];
-  
   const podiumOrder = [];
   
   if (list[1]) podiumOrder.push({ data: list[1], rank: 2, icon: medals[1] });
@@ -530,7 +485,6 @@ function renderSubjectsCards(list, containerId, isTop) {
     contentDiv.appendChild(iconDiv);
     contentDiv.appendChild(titleDiv);
     contentDiv.appendChild(percentDiv);
-
     card.appendChild(fillDiv);
     card.appendChild(contentDiv);
     container.appendChild(card);
@@ -541,8 +495,6 @@ function renderSubjectsCards(list, containerId, isTop) {
   });
 }
 
-
-// --- Liste Détaillée ---
 function renderSubjectsList(subjects, state) {
   const container = document.getElementById("subjects-list");
   container.innerHTML = "";
@@ -592,7 +544,6 @@ function renderSubjectsList(subjects, state) {
     infoDiv.appendChild(nameRow);
     infoDiv.appendChild(progressBg);
     infoDiv.appendChild(percentText);
-
     header.appendChild(infoDiv);
 
     const content = document.createElement("div");
@@ -638,13 +589,10 @@ function renderSubjectsList(subjects, state) {
   });
 }
 
-// --- GESTION DES OBJECTIFS ---
 function renderGoals(weekCount, allActionsDates) {
-  // 1. Calcul du compte journalier (todayCount)
   const todayISO = formatDateISO(new Date());
   const todayCount = allActionsDates.filter(d => d === todayISO).length;
 
-  // 2. Récupération des objectifs sauvegardés
   const savedDayGoal = localStorage.getItem("goal_day") || 5;
   const savedWeekGoal = localStorage.getItem("goal_week") || 30;
 
@@ -653,10 +601,7 @@ function renderGoals(weekCount, allActionsDates) {
   
   if(dayInput) {
     dayInput.value = savedDayGoal;
-    // Mise à jour visuelle
     updateGoalUI("day", todayCount, savedDayGoal);
-    
-    // Sauvegarde au changement
     dayInput.addEventListener("change", (e) => {
       const val = e.target.value;
       localStorage.setItem("goal_day", val);
@@ -667,7 +612,6 @@ function renderGoals(weekCount, allActionsDates) {
   if(weekInput) {
     weekInput.value = savedWeekGoal;
     updateGoalUI("week", weekCount, savedWeekGoal);
-
     weekInput.addEventListener("change", (e) => {
       const val = e.target.value;
       localStorage.setItem("goal_week", val);
@@ -679,23 +623,18 @@ function renderGoals(weekCount, allActionsDates) {
 function updateGoalUI(type, current, max) {
   const bar = document.getElementById(`goal-${type}-bar`);
   const text = document.getElementById(`goal-${type}-text`);
-  
   const pct = Math.min(100, (current / max) * 100);
   
   if(bar) bar.style.width = `${pct}%`;
   if(text) text.textContent = `${current} / ${max}`;
-  
-  // Couleur verte si atteint
   if(bar && pct >= 100) bar.style.backgroundColor = "#4caf50";
   else if (bar) bar.style.backgroundColor = "#29b6f6";
 }
 
-// Fonction utilitaire (si pas déjà dispo)
 function removeAccents(str) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
-// --- RECHERCHE MATIÈRE (Accents + Croix) ---
 document.addEventListener("DOMContentLoaded", () => {
   const searchInput = document.getElementById("subject-search");
   const searchClearBtn = document.getElementById("subject-search-clear");
@@ -705,40 +644,22 @@ document.addEventListener("DOMContentLoaded", () => {
       const rawTerm = searchInput.value;
       const term = removeAccents(rawTerm);
       const items = document.querySelectorAll(".subject-item");
-      
-      // Gestion croix
-      if(searchClearBtn) {
-        searchClearBtn.style.display = rawTerm ? "block" : "none";
-      }
+      if(searchClearBtn) searchClearBtn.style.display = rawTerm ? "block" : "none";
 
       items.forEach(item => {
         const nameRaw = item.querySelector(".subject-name").textContent;
         const name = removeAccents(nameRaw);
-        
-        if(name.includes(term)) {
-          item.style.display = "";
-        } else {
-          item.style.display = "none";
-        }
+        if(name.includes(term)) item.style.display = "";
+        else item.style.display = "none";
       });
     };
-
     searchInput.addEventListener("input", handleSearch);
-
-    // Clic sur la croix
     if(searchClearBtn) {
       searchClearBtn.addEventListener("click", () => {
         searchInput.value = "";
-        handleSearch(); // Relance la recherche à vide (affiche tout)
+        handleSearch();
         searchInput.focus();
       });
     }
   }
-  const sortSelect = document.getElementById("subject-sort");
-if (sortSelect) {
-  sortSelect.addEventListener("change", () => {
-    const state = loadState();
-    applySubjectSortAndRender(state);
-  });
-}
 });
