@@ -351,7 +351,8 @@ if (sortSelect) {
 
       return 0;
     });
-      
+    
+    const fragment = document.createDocumentFragment(); // CORRECTIF PERF
     sortedChapters.forEach(chap => {
       const st = state.chapters[chap.id];
 
@@ -411,7 +412,7 @@ if (sortSelect) {
 
       li.appendChild(checkbox);
       li.appendChild(label);
-      liste.appendChild(li);
+      fragment.appendChild(li); // On ajoute au fragment mémoire, pas au DOM direct
 
       liParId[chap.id] = li;
       checkboxParId[chap.id] = checkbox;
@@ -509,6 +510,7 @@ if (sortSelect) {
         }
       });
     });
+    liste.appendChild(fragment); // CORRECTIF PERF : On injecte tout d'un coup
   }
 
   function majProgression() {

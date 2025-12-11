@@ -2757,3 +2757,8 @@ body.dark-mode ::-webkit-calendar-picker-indicator {
   filter: invert(1);
   cursor: pointer;
 }
+
+/* CORRECTIF AUDIT : Bloquer le scroll quand modale ouverte */
+body.modal-open {
+  overflow: hidden;
+}

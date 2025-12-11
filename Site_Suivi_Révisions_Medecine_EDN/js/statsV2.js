@@ -347,10 +347,11 @@ function renderWeekdayChart(allActionsDates, learnedDates) {
     const averageData = [];
     // Remplacer la boucle for(let i=0; i<7; i++) { ... } par celle-ci pour être sûr :
     for(let i=0; i<7; i++) {
-        // Sécurité anti-crash division par zéro
-        const count = occurrencesByDay[i] > 0 
-            ? (totalActionsByDay[i] / occurrencesByDay[i]) 
-            : 0; 
+        // CORRECTIF AUDIT : Sécurité division par zéro
+        let count = 0;
+        if (occurrencesByDay[i] > 0) {
+            count = totalActionsByDay[i] / occurrencesByDay[i];
+        }
         averageData[i] = parseFloat(count.toFixed(1)); 
     }
 
