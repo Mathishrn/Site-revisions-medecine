@@ -1,4 +1,4 @@
-const CACHE_NAME = "suivi-med-v2.4.3-fixfinal";
+const CACHE_NAME = "suivi-med-v2.4.3-fixfinal_final";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
