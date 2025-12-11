@@ -828,6 +828,234 @@ document.addEventListener("DOMContentLoaded", () => {
     renderMonthView();
   });
 
+// --- GESTION DES PARAMÈTRES AVANCÉS ---
+  const btnSettings = document.getElementById("btn-settings");
+  const modalSettings = document.getElementById("settings-modal");
+  const closeSettings = document.getElementById("settings-close");
+  const backdropSettings = document.getElementById("settings-backdrop");
+  const btnSaveSettings = document.getElementById("btn-save-settings");
+  
+  // Champs Dates & Intervalles
+  const inputStart = document.getElementById("set-start-date");
+  const inputEnd = document.getElementById("set-end-date");
+  const inputOffsets = document.getElementById("set-offsets");
+
+  // Nouveaux Champs : Jours Bloqués
+  const selectBlockedDay = document.getElementById("select-blocked-day");
+  const btnAddBlockedDay = document.getElementById("btn-add-blocked-day");
+  const listBlockedDays = document.getElementById("blocked-days-list");
+  
+  // Nouveaux Champs : Vacances
+  const inputVacStart = document.getElementById("vacation-start");
+  const inputVacEnd = document.getElementById("vacation-end");
+  const btnAddVacation = document.getElementById("btn-add-vacation");
+  const listVacations = document.getElementById("vacation-list");
+
+  // Variables temporaires pour stocker les choix avant sauvegarde
+  let tempBlockedWeekdays = [];
+  let tempVacations = [];
+
+  const WEEKDAY_NAMES = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+
+  // Fonction pour dessiner les tags (étiquettes bleues)
+  function renderTags() {
+    // 1. Tags Jours Bloqués
+    if(listBlockedDays) {
+      listBlockedDays.innerHTML = "";
+      tempBlockedWeekdays.forEach(dayIndex => {
+        const tag = document.createElement("div");
+        tag.className = "tag-item";
+        tag.innerHTML = `<span>🚫 ${WEEKDAY_NAMES[dayIndex]}</span>`;
+        
+        const removeBtn = document.createElement("span");
+        removeBtn.className = "tag-remove";
+        removeBtn.textContent = "✖";
+        
+        // Correctif robuste : addEventListener
+        removeBtn.addEventListener("click", () => {
+          tempBlockedWeekdays = tempBlockedWeekdays.filter(d => d !== dayIndex);
+          renderTags();
+        });
+        
+        tag.appendChild(removeBtn);
+        listBlockedDays.appendChild(tag);
+      });
+    }
+
+    // 2. Tags Vacances
+    if(listVacations) {
+      listVacations.innerHTML = "";
+      tempVacations.forEach((vac, idx) => {
+        const tag = document.createElement("div");
+        tag.className = "tag-item";
+        
+        // Formatage joli des dates
+        const d1 = new Date(vac.start);
+        const d2 = new Date(vac.end);
+        const fmt = { day: 'numeric', month: 'short' };
+        const label = `🏖️ ${d1.toLocaleDateString('fr-FR', fmt)} au ${d2.toLocaleDateString('fr-FR', fmt)}`;
+
+        tag.innerHTML = `<span>${label}</span>`;
+        
+        const removeBtn = document.createElement("span");
+        removeBtn.className = "tag-remove";
+        removeBtn.textContent = "✖";
+        
+        // Correctif robuste : addEventListener
+        removeBtn.addEventListener("click", () => {
+          tempVacations.splice(idx, 1);
+          renderTags();
+        });
+        
+        tag.appendChild(removeBtn);
+        listVacations.appendChild(tag);
+      });
+    }
+  }
+
+  if (btnSettings && modalSettings) {
+    // OUVERTURE MODALE : On charge les données existantes
+    btnSettings.addEventListener("click", () => {
+      const s = getSettings();
+      inputStart.value = s.startDate;
+      inputEnd.value = s.endDate;
+      inputOffsets.value = s.offsets;
+      
+      // On clone les tableaux pour ne pas modifier directement sans sauvegarder
+      tempBlockedWeekdays = [...(s.blockedWeekdays || [])];
+      tempVacations = [...(s.vacations || [])];
+      
+      renderTags();
+      modalSettings.classList.add("open");
+    });
+
+    function closeSet() { modalSettings.classList.remove("open"); }
+    closeSettings.addEventListener("click", closeSet);
+    backdropSettings.addEventListener("click", closeSet);
+
+    // ACTION : Ajouter un Jour Bloqué
+    if(btnAddBlockedDay) {
+        btnAddBlockedDay.addEventListener("click", () => {
+        const val = parseInt(selectBlockedDay.value, 10);
+        if (isNaN(val)) return; // Rien sélectionné
+        
+        if (!tempBlockedWeekdays.includes(val)) {
+            tempBlockedWeekdays.push(val);
+            tempBlockedWeekdays.sort(); // Garder l'ordre Dimanche -> Samedi
+            renderTags();
+        }
+        });
+    }
+
+    // ACTION : Ajouter une Période de Vacances
+    if(btnAddVacation) {
+        btnAddVacation.addEventListener("click", () => {
+        const s = inputVacStart.value;
+        const e = inputVacEnd.value;
+        
+        if (!s || !e) return alert("Il faut une date de début et une date de fin.");
+        if (s > e) return alert("La date de début doit être avant la fin !");
+        
+        tempVacations.push({ start: s, end: e });
+        // On trie par date chronologique
+        tempVacations.sort((a,b) => a.start.localeCompare(b.start));
+        
+        // Reset des champs
+        inputVacStart.value = "";
+        inputVacEnd.value = "";
+        renderTags();
+        });
+    }
+
+    // --- AJOUT : BOUTON RÉINITIALISER (Version Robuste) ---
+    const btnResetSettings = document.getElementById("btn-reset-settings");
+    
+    if (btnResetSettings) {
+      // On remplace .onclick par addEventListener
+      btnResetSettings.addEventListener("click", () => {
+        const confirmReset = confirm(
+          "⚠️ Es-tu sûr de vouloir tout réinitialiser ?\n\n" +
+          "Cela va remettre les dates, le rythme et les jours bloqués aux valeurs par défaut.\n" +
+          "Ton planning sera recalculé (mais l'historique de ce qui est déjà fait sera conservé)."
+        );
+
+        if (confirmReset) {
+          // 1. On efface les réglages perso du stockage
+          localStorage.removeItem("suivi_med_settings_v1");
+          
+          // 2. On lance le recalcul (qui utilisera du coup les valeurs par défaut)
+          // La fonction recalculateAllSchedules est dans commonV2.js
+          recalculateAllSchedules();
+          
+          alert("Paramètres remis à zéro !");
+          window.location.reload(); // On recharge pour appliquer les changements
+        }
+      });
+    }
+
+    // ACTION : SAUVEGARDER
+    btnSaveSettings.addEventListener("click", () => {
+      const newStart = inputStart.value;
+      const newEnd = inputEnd.value;
+      const newOffsets = inputOffsets.value;
+
+      // SÉCURITÉ 1 : Champs vides
+      if (!newStart || !newEnd || !newOffsets) {
+        return alert("Tous les champs (dates et rythme) sont obligatoires.");
+      }
+
+      // SÉCURITÉ 2 : Voyageur Temporel (Début > Fin)
+      if (newStart >= newEnd) {
+        return alert("⛔ Erreur de dates !\nLa date de début doit être strictement AVANT la date de fin.");
+      }
+
+      // SÉCURITÉ 3 : Burn-out (7 jours bloqués)
+      if (tempBlockedWeekdays.length >= 7) {
+        return alert("⛔ Impossible !\nTu ne peux pas bloquer les 7 jours de la semaine, sinon tu ne pourras jamais réviser 😅.");
+      }
+
+      // SÉCURITÉ 4 : Cohérence avec l'historique
+      const currentMinLearned = getMinLearnedDate(state); 
+      if (currentMinLearned && newStart > currentMinLearned) {
+        return alert(`⛔ Impossible !\nTu as déjà validé un chapitre le ${formatDateFr(currentMinLearned)}.\nLa date de début ne peut pas être après.`);
+      }
+
+      // Si tout est bon, on sauvegarde
+      const newSettings = {
+        startDate: newStart,
+        endDate: newEnd,
+        offsets: newOffsets,
+        blockedWeekdays: tempBlockedWeekdays,
+        vacations: tempVacations
+      };
+      
+      if (confirm("⚠️ Sauvegarder et recalculer le planning ?\n(L'historique des révisions faites sera conservé.)")) {
+        saveSettings(newSettings);
+        const count = recalculateAllSchedules();
+        updateDeadlineBox(loadState());
+        if(typeof closeSet === 'function') closeSet(); // Ferme la modale
+        else if(modalSettings) modalSettings.classList.remove("open");
+        
+        alert(`C'est tout bon ! ${count} chapitres mis à jour.`);
+        window.location.reload();
+      }
+    });
+  }
+
+  // Petite fonction utilitaire pour trouver la date la plus ancienne apprise
+  function getMinLearnedDate(currentState) {
+    let minDate = null;
+    CHAPITRES.forEach(ch => {
+      const st = currentState.chapters[ch.id];
+      if (st && st.completed && st.learnedDate) {
+        if (!minDate || st.learnedDate < minDate) {
+          minDate = st.learnedDate;
+        }
+      }
+    });
+    return minDate;
+  }
+
   renderTodayReviews();
   renderWeekView();
   renderMonthView();

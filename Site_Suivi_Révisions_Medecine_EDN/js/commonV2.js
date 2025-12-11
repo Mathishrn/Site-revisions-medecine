@@ -1,29 +1,25 @@
-// js/common.js
+// js/commonV2.js
 
 /* --- PROTECTION ANTI-COPIE --- */
 document.addEventListener('DOMContentLoaded', () => {
-  
-  // 1. Bloquer le clic droit (Menu contextuel)
+  // 1. Bloquer le clic droit (sauf sur inputs)
   document.addEventListener('contextmenu', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     e.preventDefault();
-    // Optionnel : afficher une petite alerte (déconseillé car agaçant, mais possible)
-    // alert("Pas de clic droit ici ! 😉"); 
   });
 
-  // 2. Bloquer certains raccourcis clavier (Copier, Coller, Inspecter...)
+  // 2. Bloquer raccourcis (Ctrl+C, U, F12)
   document.addEventListener('keydown', (e) => {
-    // Bloque Ctrl+C (Copier), Ctrl+X (Couper), Ctrl+U (Code source), F12 (Inspecter)
     if (
-      (e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.key === 'x' || e.key === 'X' || e.key === 'u' || e.key === 'U')) ||
+      (e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.key === 'u' || e.key === 'U')) ||
       e.key === 'F12'
     ) {
       e.preventDefault();
     }
   });
-
 });
 
-// --- Utilitaires dates ---
+// --- UTILITAIRES DATES ---
 
 function parseDate(str) {
   if (!str) return new Date();
@@ -58,9 +54,81 @@ function todayISO() {
   return formatDateISO(new Date());
 }
 
-// --- Gestion du stockage global ---
+// --- GESTION DU STOCKAGE ---
 
 const STORAGE_KEY_STATE = "suivi_med_state_v1";
+const STORAGE_KEY_SETTINGS = "suivi_med_settings_v1";
+
+// --- GESTION INTELLIGENTE DES PARAMÈTRES (V3) ---
+
+function getSettings() {
+  const defaults = {
+    startDate: typeof START_DATE_STR !== 'undefined' ? START_DATE_STR : "2025-09-01",
+    endDate: typeof END_DATE_STR !== 'undefined' ? END_DATE_STR : "2026-08-30",
+    offsets: typeof REVIEW_OFFSETS_DAYS !== 'undefined' ? REVIEW_OFFSETS_DAYS.join(", ") : "1, 3, 7, 14, 30, 45, 60, 90, 120, 180, 240, 300",
+    blockedWeekdays: [], 
+    vacations: []        
+  };
+  
+  const raw = localStorage.getItem(STORAGE_KEY_SETTINGS);
+  if (!raw) return defaults;
+  
+  try {
+    const s = JSON.parse(raw);
+    return { ...defaults, ...s };
+  } catch(e) {
+    return defaults;
+  }
+}
+
+function saveSettings(newSettings) {
+  localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(newSettings));
+}
+
+function getOffsetsArray() {
+  const s = getSettings();
+  return s.offsets.split(",")
+    .map(x => parseInt(x.trim(), 10))
+    .filter(x => !isNaN(x) && x > 0)
+    .sort((a,b) => a - b);
+}
+
+/**
+ * SMART RESCHEDULE : Vérifie si une date est bloquée
+ */
+function isDateBlocked(dateObj, settings) {
+  const iso = formatDateISO(dateObj);
+  
+  // 1. Vérif Weekday (0=Dimanche, 6=Samedi)
+  const day = dateObj.getDay();
+  if (settings.blockedWeekdays && settings.blockedWeekdays.includes(day)) return true;
+
+  // 2. Vérif Vacances
+  if (settings.vacations && settings.vacations.length > 0) {
+    for (let p of settings.vacations) {
+      if (iso >= p.start && iso <= p.end) return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * SMART RESCHEDULE : Trouve la prochaine date libre
+ */
+function findNextAvailableDate(targetDate, settings) {
+  let d = new Date(targetDate);
+  // Sécurité : on ne cherche pas plus de 365 jours pour éviter boucle infinie
+  let safeGuard = 0;
+  
+  while (isDateBlocked(d, settings) && safeGuard < 365) {
+    d = addDays(d, 1);
+    safeGuard++;
+  }
+  return d;
+}
+
+// --- STATE MANAGEMENT ---
 
 function initEmptyState() {
   const state = {
@@ -98,6 +166,7 @@ function loadState() {
     state.chapters = {};
   }
 
+  // Initialisation lazy
   CHAPITRES.forEach(ch => {
     if (!state.chapters[ch.id]) {
       state.chapters[ch.id] = {
@@ -112,16 +181,11 @@ function loadState() {
     state.globalStartDate = todayISO();
   }
 
-  // 🔴 Nettoyage important :
-  // - si le chapitre n'est PAS complété -> on enlève learnedDate et reviews
-  // - si le chapitre est complété et a une date mais pas de reviews -> on génère
-  // - si le chapitre est marqué "complété" mais SANS date (bug ancien) -> on le remet non complété
+  // Correction de cohérence
   CHAPITRES.forEach(ch => {
     const st = state.chapters[ch.id];
     if (!st) return;
 
-    // Cas incohérent hérité d'anciennes versions :
-    // completed = true mais pas de learnedDate -> on corrige
     if (st.completed && !st.learnedDate) {
       st.completed = false;
       st.learnedDate = null;
@@ -142,7 +206,6 @@ function loadState() {
     }
   });
 
-
   saveState(state);
   return state;
 }
@@ -151,27 +214,32 @@ function saveState(state) {
   localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(state));
 }
 
-// --- Génération des re-révisions pour un chapitre ---
+// --- GÉNÉRATION & CALCULS PLANNING ---
 
+/**
+ * Génère le planning complet (utilisé lors du premier cochage)
+ */
 function generateReviewSchedule(learnedDateStr) {
   const learnedDate = parseDate(learnedDateStr);
   
-  // MODIFICATION : Utilisation des paramètres dynamiques
   const settings = getSettings();
   const endDate = parseDate(settings.endDate);
-  const offsets = getOffsetsArray(); // Récupère depuis LS ou défaut
+  const offsets = getOffsetsArray();
 
   const reviews = [];
   for (let i = 0; i < offsets.length; i++) {
     const offset = offsets[i];
-    const reviewDate = addDays(learnedDate, offset);
-    if (reviewDate > endDate) {
-      break;
-    }
+    let theoreticalDate = addDays(learnedDate, offset);
+    
+    // SMART RESCHEDULE : Décalage si bloqué
+    let finalDate = findNextAvailableDate(theoreticalDate, settings);
+
+    if (finalDate > endDate) break;
+
     reviews.push({
-      index: reviews.length + 1,
+      index: i + 1,
       offsetDays: offset,
-      date: formatDateISO(reviewDate),
+      date: formatDateISO(finalDate),
       done: false
     });
   }
@@ -179,26 +247,105 @@ function generateReviewSchedule(learnedDateStr) {
   return reviews;
 }
 
-// --- Bloc "date de fin de révisions" ---
+/**
+ * RECALCUL GLOBAL INTELLIGENT
+ * Préserve l'historique (ce qui est fait reste fait)
+ * Applique les nouveaux intervalles et exclusions sur le futur
+ */
+/**
+ * RECALCUL GLOBAL INTELLIGENT (CORRIGÉ V3.2)
+ * Fusionne l'historique réel avec le nouveau planning théorique
+ * basé sur les jours (offsets) et non plus sur les index.
+ */
+function recalculateAllSchedules() {
+  let state = loadState();
+  const settings = getSettings();
+  const offsets = getOffsetsArray(); // ex: [1, 3, 7, 25, 60...]
+  const endDate = parseDate(settings.endDate);
+  
+  let countUpdated = 0;
+
+  CHAPITRES.forEach(ch => {
+    const st = state.chapters[ch.id];
+    if (!st || !st.completed || !st.learnedDate) return;
+
+    const learnedDate = parseDate(st.learnedDate);
+    
+    // 1. Récupérer l'historique (ce qui est DÉJÀ FAIT)
+    // On garde précieusement tout ce qui est coché.
+    const history = st.reviews.filter(r => r.done);
+
+    // 2. Trouver le "niveau" actuel (le plus grand J+ validé)
+    // Ex: Si j'ai fait J+1, J+3, J+14 -> maxOffsetDone = 14
+    let maxOffsetDone = 0;
+    if (history.length > 0) {
+      // On cherche le max dans l'historique
+      maxOffsetDone = Math.max(...history.map(r => r.offsetDays));
+    }
+
+    // 3. Calculer le futur basé sur les NOUVEAUX intervalles
+    // On ne génère que les révisions dont le J+ est STRICTEMENT SUPÉRIEUR
+    // à ce qu'on a déjà fait.
+    // Ex: Si maxOffsetDone = 14 et nouveaux offsets = [1, 3, 7, 25, 60]
+    // On ne garde que [25, 60].
+    const futureOffsets = offsets.filter(off => off > maxOffsetDone);
+
+    const futureReviews = [];
+
+    for (let i = 0; i < futureOffsets.length; i++) {
+      const offset = futureOffsets[i];
+      let theoreticalDate = addDays(learnedDate, offset);
+      
+      // SMART RESCHEDULE (Jours bloqués / Vacances)
+      let finalDate = findNextAvailableDate(theoreticalDate, settings);
+      
+      if (finalDate > endDate) break;
+      
+      futureReviews.push({
+        // L'index sera recalculé juste après pour être propre
+        index: 0, 
+        offsetDays: offset,
+        date: formatDateISO(finalDate),
+        done: false
+      });
+    }
+
+    // 4. Fusionner : Historique + Futur
+    const newSchedule = [...history, ...futureReviews];
+
+    // 5. Renumérotation propre des index (1, 2, 3...)
+    // Pour que l'affichage soit cohérent (ex: "Révision n°4, Révision n°5"...)
+    // même si on a sauté des étapes dans la nouvelle config.
+    newSchedule.sort((a, b) => a.offsetDays - b.offsetDays); // Tri par jour (sécurité)
+    
+    newSchedule.forEach((r, idx) => {
+      r.index = idx + 1;
+    });
+
+    st.reviews = newSchedule;
+    countUpdated++;
+  });
+
+  saveState(state);
+  return countUpdated;
+}
+
+// --- BOÎTE DEADLINE ---
 
 function updateDeadlineBox(state) {
   const countdownElem = document.getElementById("deadline-countdown");
   const barElem = document.getElementById("deadline-progress-bar");
-  // NOUVEAU : On sélectionne aussi le titre pour changer la date affichée
   const titleElem = document.querySelector(".deadline-title");
 
   if (!countdownElem || !barElem) return;
 
   const today = new Date();
   
-  // On récupère tes réglages personnalisés
   const settings = getSettings();
   const start = parseDate(settings.startDate);
   const end = parseDate(settings.endDate);
 
-  // 1. MISE À JOUR DU TITRE (C'est ce qui manquait !)
   if (titleElem) {
-    // On formate la date en français (ex: "15 juin 2027")
     const dateStr = end.toLocaleDateString("fr-FR", {
       day: "numeric", 
       month: "long", 
@@ -207,7 +354,6 @@ function updateDeadlineBox(state) {
     titleElem.textContent = `Date de fin de révisions : ${dateStr}`;
   }
 
-  // 2. Calcul des jours restants
   const diffMs = end - today;
   const msPerDay = 1000 * 60 * 60 * 24;
   const daysLeft = Math.max(0, Math.ceil(diffMs / msPerDay));
@@ -218,7 +364,6 @@ function updateDeadlineBox(state) {
     countdownElem.textContent = `Il reste ${daysLeft} jours avant la fin.`;
   }
   
-  // 3. Barre de progression
   const totalMs = end - start;
   let elapsedMs = today - start;
   
@@ -226,12 +371,10 @@ function updateDeadlineBox(state) {
   if (elapsedMs > totalMs) elapsedMs = totalMs;
 
   const ratio = totalMs > 0 ? (elapsedMs / totalMs) * 100 : 0;
-  const ratioRounded = Math.min(100, Math.max(0, ratio));
-  
-  barElem.style.width = ratioRounded + "%";
+  barElem.style.width = Math.min(100, Math.max(0, ratio)) + "%";
 }
 
-// --- Toast (popup) ---
+// --- TOAST ---
 
 function showToast(message) {
   const toast = document.getElementById("toast");
@@ -246,21 +389,24 @@ function showToast(message) {
   }, 5000);
 }
 
-// --- Stats & phrases de motivation ---
+// --- STATS HELPER ---
 
 function getDaysLeft() {
   const today = new Date();
-  const end = parseDate(END_DATE_STR);
+  const settings = getSettings();
+  const end = parseDate(settings.endDate);
   const diffMs = end - today;
   const msPerDay = 1000 * 60 * 60 * 24;
   return Math.max(0, Math.ceil(diffMs / msPerDay));
 }
 
+// --- MOTIVATION (Version Complète Restaurée) ---
+
 function buildMotivationMessage(state) {
   const total = CHAPITRES.length;
   let faits = 0;
-  CHAPITRES.forEach(ch => {
-    if (state.chapters[ch.id] && state.chapters[ch.id].completed) faits++;
+  Object.values(state.chapters).forEach(c => {
+    if (c.completed) faits++;
   });
 
   const jours = getDaysLeft();
@@ -337,16 +483,15 @@ function buildMotivationMessage(state) {
     .replace("{jours}", jours);
 }
 
-// --- Helpers de manipulation des re-révisions (state global) ---
-
+// --- UTILITAIRES DE MANIPULATION DU STATE (Restaurés) ---
 
 /**
- * Ajoute une re-révision manuelle à un chapitre pour une date donnée.
- * Retourne le state à jour.
+ * Ajoute une re-révision manuelle à un chapitre.
  */
 function addManualReview(chapterId, dateISO) {
   let state = loadState();
-  const st = getOrInitChapterState(state, chapterId);
+  const st = state.chapters[chapterId];
+  if (!st) return state;
 
   const dateObj = parseDate(dateISO);
   let offset = null;
@@ -370,14 +515,12 @@ function addManualReview(chapterId, dateISO) {
 }
 
 /**
- * Supprime une re-révision par son index logique.
+ * Supprime une re-révision par son index.
  */
 function deleteReview(chapterId, reviewIndex) {
   let state = loadState();
   const st = state.chapters[chapterId];
-  if (!st || !Array.isArray(st.reviews)) {
-    return state;
-  }
+  if (!st || !Array.isArray(st.reviews)) return state;
 
   st.reviews = st.reviews.filter(r => r.index !== reviewIndex);
   saveState(state);
@@ -385,28 +528,18 @@ function deleteReview(chapterId, reviewIndex) {
 }
 
 /**
- * Déplace une re-révision vers une nouvelle date en conservant l'historique :
- * - la révision originale est marquée comme "moved" (barrée, non active)
- * - une nouvelle révision est créée à la nouvelle date, liée à l'ancienne
+ * Déplace une re-révision en conservant l'original marqué "moved".
  */
 function moveReviewWithHistory(chapterId, reviewIndex, newDateISO) {
   let state = loadState();
   const st = state.chapters[chapterId];
-  if (!st || !Array.isArray(st.reviews)) {
-    return state;
-  }
+  if (!st || !Array.isArray(st.reviews)) return state;
 
   const review = st.reviews.find(r => r.index === reviewIndex);
-  if (!review) {
-    return state;
-  }
-
-  if (review.date === newDateISO) {
-    return state;
-  }
+  if (!review) return state;
+  if (review.date === newDateISO) return state;
 
   const newDate = parseDate(newDateISO);
-
   let newOffset = review.offsetDays || 0;
   if (st.learnedDate) {
     const learned = parseDate(st.learnedDate);
@@ -415,12 +548,10 @@ function moveReviewWithHistory(chapterId, reviewIndex, newDateISO) {
     newOffset = Math.round(diffMs / msPerDay);
   }
 
-  // 1) on marque l'original comme "déplacé"
   review.moved = true;
   review.movedToDate = newDateISO;
   review.done = false;
 
-  // 2) nouveau clone enfant
   const maxIndex = st.reviews.reduce((max, r) => Math.max(max, r.index || 0), 0);
   const child = {
     index: maxIndex + 1,
@@ -431,13 +562,9 @@ function moveReviewWithHistory(chapterId, reviewIndex, newDateISO) {
     linkedFrom: reviewIndex
   };
 
-  // 👉 On insère le clone juste après l'original dans le tableau
   const pos = st.reviews.indexOf(review);
-  if (pos === -1) {
-    st.reviews.push(child);
-  } else {
-    st.reviews.splice(pos + 1, 0, child);
-  }
+  if (pos === -1) st.reviews.push(child);
+  else st.reviews.splice(pos + 1, 0, child);
 
   saveState(state);
   return state;
@@ -458,53 +585,27 @@ function updateReviewDate(chapterId, reviewIndex, newDateISO) {
 function setReviewDone(chapterId, reviewIndex, done) {
   let state = loadState();
   const st = state.chapters[chapterId];
-  if (!st || !Array.isArray(st.reviews)) {
-    return state;
-  }
+  if (!st || !Array.isArray(st.reviews)) return state;
   const review = st.reviews.find(r => r.index === reviewIndex);
-  if (!review) {
-    return state;
-  }
+  if (!review) return state;
 
   review.done = !!done;
   saveState(state);
   return state;
 }
 
-function getOrInitChapterState(state, chapterId) {
-  if (!state.chapters[chapterId]) {
-    state.chapters[chapterId] = {
-      completed: false,
-      learnedDate: null,
-      reviews: []
-    };
-  }
-  if (!Array.isArray(state.chapters[chapterId].reviews)) {
-    state.chapters[chapterId].reviews = [];
-  }
-  return state.chapters[chapterId];
-}
-
-/**
- * Toggle "fait / pas fait" pour une re-révision.
- * - done = true  -> marque comme faite
- *    - si elle était en "pas aujourd'hui", on annule le skip (on supprime le clone du lendemain)
- * - done = false -> enlève juste le fait
- */
 function toggleReviewDone(chapterId, reviewIndex, done) {
   let state = loadState();
   const st = state.chapters[chapterId];
   if (!st || !Array.isArray(st.reviews)) return state;
-
+  
   const review = st.reviews.find(r => r.index === reviewIndex);
   if (!review) return state;
 
   if (done) {
     if (review.status === "skipped" && typeof review.skipChildIndex === "number") {
       const idx = st.reviews.findIndex(r => r.index === review.skipChildIndex);
-      if (idx !== -1) {
-        st.reviews.splice(idx, 1);
-      }
+      if (idx !== -1) st.reviews.splice(idx, 1);
       delete review.skipChildIndex;
     }
     review.status = "normal";
@@ -512,261 +613,119 @@ function toggleReviewDone(chapterId, reviewIndex, done) {
   } else {
     review.done = false;
   }
-
   saveState(state);
   return state;
 }
 
-/**
- * "Pas aujourd'hui" :
- * - A chaque clic, on décale simplement la date de la re-révision de +1 jour.
- * - On laisse offsetDays tel quel (J+ initial).
- * - Le "reporté de X jours" se calcule par la différence entre la date actuelle
- *   et la date théorique (learnedDate + offsetDays).
- */
 function toggleReviewSkipToday(chapterId, reviewIndex) {
   let state = loadState();
   const st = state.chapters[chapterId];
   if (!st || !Array.isArray(st.reviews)) return state;
-
   const review = st.reviews.find(r => r.index === reviewIndex);
   if (!review || !review.date) return state;
-
+  
   const currentDate = parseDate(review.date);
   const newDate = addDays(currentDate, 1);
-  const newDateISO = formatDateISO(newDate);
-
-  review.date = newDateISO;
+  review.date = formatDateISO(newDate);
   review.done = false;
   review.status = "normal";
-
   saveState(state);
   return state;
 }
 
 
-// ... (Tout le code précédent reste là) ...
+// --- DARK MODE INIT ---
 
-// --- Gestion du Dark Mode ---
-
-function initDarkMode() {
+document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("btn-theme-toggle");
   
-  // 1. Vérifier la préférence sauvegardée
   const savedTheme = localStorage.getItem("theme_preference");
-  
-  // Si "dark" est sauvegardé, on l'active tout de suite
   if (savedTheme === "dark") {
     document.body.classList.add("dark-mode");
-    if (btn) btn.textContent = "☀️"; // Icône Soleil pour repasser en jour
+    if (btn) btn.textContent = "☀️"; 
   }
 
-  // 2. Gestion du clic
   if (btn) {
     btn.addEventListener("click", () => {
       document.body.classList.toggle("dark-mode");
-      
       const isDark = document.body.classList.contains("dark-mode");
-      
-      // Sauvegarde
       localStorage.setItem("theme_preference", isDark ? "dark" : "light");
-      
-      // Changement d'icône
       btn.textContent = isDark ? "☀️" : "🌙";
     });
   }
-}
-
-// On lance l'init au chargement de la page
-document.addEventListener("DOMContentLoaded", () => {
-  initDarkMode();
 });
 
 
-// --- GESTION DU FEEDBACK (CORRIGÉ) ---
+// --- GESTION FEEDBACK & NOUVEAUTÉS (Correctif) ---
 
 document.addEventListener("DOMContentLoaded", () => {
+  // 1. Feedback
   const btnOpen = document.getElementById("btn-open-feedback");
   const modalFB = document.getElementById("feedback-modal");
   const btnClose = document.getElementById("feedback-close");
   const backdrop = document.getElementById("feedback-backdrop");
   const form = document.getElementById("feedback-form");
 
-  if (!btnOpen || !modalFB) return;
-
-  // Ouvrir
-  btnOpen.addEventListener("click", () => {
-    modalFB.classList.add("open");
-    modalFB.setAttribute("aria-hidden", "false");
-  });
-
-  // Fermer
-  function closeFeedback() {
-    modalFB.classList.remove("open");
-    modalFB.setAttribute("aria-hidden", "true");
-  }
-
-  if (btnClose) btnClose.addEventListener("click", closeFeedback);
-  if (backdrop) backdrop.addEventListener("click", closeFeedback);
-
-  // Soumission du formulaire
-  if (form) {
-    form.addEventListener("submit", (e) => {
-      e.preventDefault(); // On ne recharge pas la page
-
-      const submitBtn = form.querySelector(".submit-btn");
-      const originalText = submitBtn.textContent;
-      submitBtn.textContent = "Envoi en cours...";
-      submitBtn.disabled = true;
-
-      // Création des données (incluant le fichier s'il y en a un)
-      const myFormData = new FormData(form);
-
-      // Envoi à Netlify
-      fetch("/", {
-        method: "POST",
-        // IMPORTANT : On NE MET PAS de header "Content-Type" ici.
-        // Le navigateur va mettre automatiquement "multipart/form-data" 
-        // avec la bonne frontière pour le fichier.
-        body: myFormData,
-      })
-      .then((response) => {
-        if (response.ok) {
-          closeFeedback();
-          showToast("Message envoyé ! Merci pour ton retour 💌");
-          form.reset();
-        } else {
-          throw new Error("Erreur réseau : " + response.statusText);
-        }
-      })
-      .catch((error) => {
-        console.error("Erreur envoi formulaire :", error);
-        alert("Oups, l'envoi a échoué. Vérifie ta connexion.");
-      })
-      .finally(() => {
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-      });
+  if (btnOpen && modalFB) {
+    btnOpen.addEventListener("click", () => {
+      modalFB.classList.add("open");
+      modalFB.setAttribute("aria-hidden", "false");
     });
-  }
-});
+    
+    function closeFeedback() {
+      modalFB.classList.remove("open");
+      modalFB.setAttribute("aria-hidden", "true");
+    }
+    
+    if (btnClose) btnClose.addEventListener("click", closeFeedback);
+    if (backdrop) backdrop.addEventListener("click", closeFeedback);
 
-document.addEventListener("DOMContentLoaded", () => {
+    if (form) {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const submitBtn = form.querySelector(".submit-btn");
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = "Envoi...";
+        submitBtn.disabled = true;
+
+        const myFormData = new FormData(form);
+        fetch("/", { method: "POST", body: myFormData })
+          .then((response) => {
+            if (response.ok) {
+              closeFeedback();
+              showToast("Message envoyé ! Merci 💌");
+              form.reset();
+            } else { throw new Error("Erreur réseau"); }
+          })
+          .catch((error) => {
+            console.error(error);
+            alert("Erreur d'envoi.");
+          })
+          .finally(() => {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+          });
+      });
+    }
+  }
+
+  // 2. Nouveautés
   const btnNews = document.getElementById("btn-news");
   const modalNews = document.getElementById("news-modal");
   const btnCloseNews = document.getElementById("news-close");
   const backdropNews = document.getElementById("news-backdrop");
 
-  if (!btnNews || !modalNews) return;
-
-  function openNews() {
-    modalNews.classList.add("open");
-    modalNews.setAttribute("aria-hidden", "false");
-  }
-
-  function closeNews() {
-    modalNews.classList.remove("open");
-    modalNews.setAttribute("aria-hidden", "true");
-  }
-
-  btnNews.addEventListener("click", openNews);
-  if (btnCloseNews) btnCloseNews.addEventListener("click", closeNews);
-  if (backdropNews) backdropNews.addEventListener("click", closeNews);
-});
-
-
-// --- GESTION DES PARAMÈTRES (SETTINGS) ---
-
-const STORAGE_KEY_SETTINGS = "suivi_med_settings_v1";
-
-function getSettings() {
-  const defaults = {
-    startDate: START_DATE_STR, // Depuis dataV2.js
-    endDate: END_DATE_STR,     // Depuis dataV2.js
-    offsets: REVIEW_OFFSETS_DAYS.join(", ") // "1, 3, 7..."
-  };
-  
-  const raw = localStorage.getItem(STORAGE_KEY_SETTINGS);
-  if (!raw) return defaults;
-  
-  try {
-    return { ...defaults, ...JSON.parse(raw) };
-  } catch(e) {
-    return defaults;
-  }
-}
-
-function saveSettings(newSettings) {
-  localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(newSettings));
-}
-
-function getOffsetsArray() {
-  const s = getSettings();
-  // Convertit "1, 3, 7" en [1, 3, 7]
-  return s.offsets.split(",")
-    .map(x => parseInt(x.trim(), 10))
-    .filter(x => !isNaN(x) && x > 0)
-    .sort((a,b) => a - b);
-}
-
-// --- RECALCUL INTELLIGENT ---
-
-/**
- * Recalcule toutes les révisions futures pour tous les chapitres
- * en se basant sur la date d'apprentissage et les nouveaux offsets.
- * Préserve l'historique (révisions marquées "faites").
- */
-function recalculateAllSchedules() {
-  let state = loadState();
-  const offsets = getOffsetsArray();
-  const endDate = parseDate(getSettings().endDate);
-  
-  let countUpdated = 0;
-
-  CHAPITRES.forEach(ch => {
-    const st = state.chapters[ch.id];
-    if (!st || !st.completed || !st.learnedDate) return;
-
-    const learnedDate = parseDate(st.learnedDate);
-    
-    // 1. Sauvegarder les révisions FAITES (historique)
-    const history = st.reviews.filter(r => r.done);
-    
-    // 2. Générer le nouveau planning théorique
-    const newReviews = [];
-    for (let i = 0; i < offsets.length; i++) {
-      const offset = offsets[i];
-      const revDate = addDays(learnedDate, offset);
-      if (revDate > endDate) break;
-      
-      const revDateISO = formatDateISO(revDate);
-      
-      // On cherche si cette révision (par index) a déjà été faite
-      // Note : On essaye de matcher par "index" (ex: la 1ère révision)
-      // Si l'utilisateur change complètement les offsets (ex: J+1, J+3 -> J+2, J+5),
-      // l'historique est conservé "tel quel" pour les index correspondants (la 1ère reste la 1ère).
-      
-      const existing = history.find(h => h.index === (i + 1));
-      
-      if (existing) {
-        // On garde l'ancienne (faite) telle quelle
-        newReviews.push(existing);
-      } else {
-        // C'est une future révision (ou un retard non coché), on met la nouvelle date calculée
-        newReviews.push({
-          index: i + 1,
-          offsetDays: offset,
-          date: revDateISO,
-          done: false
-        });
-      }
+  if (btnNews && modalNews) {
+    function openNews() {
+      modalNews.classList.add("open");
+      modalNews.setAttribute("aria-hidden", "false");
     }
-    
-    // On remplace
-    st.reviews = newReviews;
-    countUpdated++;
-  });
-
-  saveState(state);
-  return countUpdated;
-}
+    function closeNews() {
+      modalNews.classList.remove("open");
+      modalNews.setAttribute("aria-hidden", "true");
+    }
+    btnNews.addEventListener("click", openNews);
+    if (btnCloseNews) btnCloseNews.addEventListener("click", closeNews);
+    if (backdropNews) backdropNews.addEventListener("click", closeNews);
+  }
+});

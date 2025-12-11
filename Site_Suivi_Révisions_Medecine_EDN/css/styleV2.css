@@ -2639,3 +2639,95 @@ body.dark-mode #info-modal li strong {
   text-align: center !important;
   margin-top: 10px; /* Un petit peu d'espace au-dessus pour aérer */
 }
+
+/* --- AJOUTS V3 : Advanced Settings & UI --- */
+
+/* Zone des tags (Jours exclus / Vacances) */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  min-height: 30px;
+}
+
+.tag-item {
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tag-remove {
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  color: #d32f2f;
+}
+
+.tag-remove:hover {
+  color: #b71c1c;
+}
+
+/* Lignes cliquables dans les modales (UX) */
+.modal-review-item, 
+.review-item {
+  cursor: pointer; /* Indique que c'est cliquable */
+  transition: background 0.2s;
+}
+
+.modal-review-item:hover,
+.review-item:hover {
+  background-color: #f0f0f0;
+}
+
+/* Dark Mode pour les tags */
+body.dark-mode .tag-item {
+  background: #263238;
+  color: #90caf9;
+  border-color: #546e7a;
+}
+body.dark-mode .tag-remove {
+  color: #ef5350;
+}
+body.dark-mode .modal-review-item:hover,
+body.dark-mode .review-item:hover {
+  background-color: #333;
+}
+
+/* Inputs alignés pour les périodes */
+.period-inputs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.period-inputs input {
+  flex: 1;
+}
+
+/* --- CORRECTIF DARK MODE : INPUTS NATIFS (Calendrier & Select) --- */
+
+body.dark-mode {
+  /* C'est LA ligne magique qui force les popups système (calendrier, select) en noir */
+  color-scheme: dark; 
+}
+
+/* On s'assure que les champs eux-mêmes (au repos) sont bien stylés */
+body.dark-mode input[type="date"],
+body.dark-mode select {
+  background-color: #2c2c2c;
+  color: #ffffff;
+  border: 1px solid #555;
+}
+
+/* Petite astuce pour que l'icône du calendrier (la petite grille) soit blanche */
+body.dark-mode ::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}

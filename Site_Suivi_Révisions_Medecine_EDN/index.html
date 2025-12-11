@@ -209,6 +209,20 @@
   </li>
 
         <li style="display: flex; gap: 10px; align-items: flex-start;">
+            <span style="font-size: 18px;">🚫</span>
+            <div>
+                <strong>Jours OFF & Vacances :</strong><br>
+                Dans les <em>Paramètres</em>, tu peux désormais bloquer des jours (ex: tous les dimanches) ou des périodes (vacances). Le planning calculera automatiquement tes révisions pour éviter ces dates.
+            </div>
+        </li>
+  <li style="display: flex; gap: 10px; align-items: flex-start;">
+    <span style="font-size: 18px;">⚙️</span>
+    <div>
+      <strong>Rythme personnalisé :</strong><br>
+      Tu peux changer les intervalles de révision (J+1, J+3...) via le bouton <em>Paramètres</em>. Attention, cela recalculera toutes tes futures dates !
+    </div>
+  </li>
+        <li style="display: flex; gap: 10px; align-items: flex-start;">
     <span style="font-size: 18px;">🌙</span>
     <div>
       <strong>Mode Sombre :</strong><br>
@@ -240,13 +254,7 @@
             </div>
           </li>
 
-  <li style="display: flex; gap: 10px; align-items: flex-start;">
-    <span style="font-size: 18px;">⚙️</span>
-    <div>
-      <strong>Rythme personnalisé :</strong><br>
-      Tu peux changer les intervalles de révision (J+1, J+3...) via le bouton <em>Paramètres</em>. Attention, cela recalculera toutes tes futures dates !
-    </div>
-  </li>
+
 
         <li style="display: flex; gap: 10px; align-items: flex-start;">
     <span style="font-size: 18px;">📏</span>
@@ -311,6 +319,17 @@
       
       <!-- C'EST ICI QUE TU AJOUTES TES PROCHAINES MISES A JOUR -->
       <!-- Copie ce bloc "changelog-item" pour en ajouter une nouvelle en haut -->
+
+      <div class="changelog-item">
+        <div class="changelog-date">11 Décembre 2025</div>
+        <h4 class="changelog-version">Version 2.4 - L'Intelligence Organisationnelle 🧠</h4>
+        <ul class="changelog-details">
+          <li>🚫 <strong>Jours OFF & Vacances :</strong> Tu peux désormais définir tes jours de repos hebdomadaires (ex: Dimanche) et tes périodes de vacances/examens. Le planning s'adapte !</li>
+          <li>🧠 <strong>Smart Reschedule :</strong> Le nouvel algorithme est intelligent : il <strong>saute automatiquement</strong> tes jours bloqués pour placer tes révisions, sans jamais effacer ton historique passé.</li>
+          <li>⚙️ <strong>Configuration Totale :</strong> La fenêtre de paramètres a été refaite à neuf. Elle est maintenant accessible depuis le Planning et permet de gérer finement tes dates.</li>
+          <li>🔄 <strong>Cohérence Temporelle :</strong> Si tu coches un chapitre appris <em>avant</em> ta date de début officielle, le site te propose d'ajuster ton planning automatiquement pour rester logique.</li>
+          </ul>
+      </div>
 
       <div class="changelog-item">
         <div class="changelog-date">05 Décembre 2025</div>
@@ -378,30 +397,71 @@
 
 <div id="settings-modal" class="modal" aria-hidden="true">
   <div class="modal-backdrop" id="settings-backdrop"></div>
-  <div class="modal-content">
-    <button class="modal-close" id="settings-close">✖</button>
+  <div class="modal-content" style="max-width: 500px;"> <button class="modal-close" id="settings-close">✖</button>
     
-    <h3>⚙️ Configuration</h3>
-    <p class="modal-desc">Modifie ici les dates et le rythme de tes révisions.</p>
+    <h3 style="border-bottom: 2px solid #2f7e5f; padding-bottom: 8px; margin-bottom: 12px; font-size: 18px;">⚙️ Configuration</h3>
 
-    <div class="settings-group">
-      <label>Date de début des révisions</label>
-      <input type="date" id="set-start-date">
+    <div class="settings-group" style="margin-bottom: 12px; padding-bottom: 12px;">
+      <label style="margin-bottom: 6px;">📅 Période de révisions</label>
+      <div style="display: flex; gap: 15px;">
+        <div style="flex: 1;">
+          <span style="font-size: 12px; color: #666; display:block; margin-bottom:2px;">Début</span>
+          <input type="date" id="set-start-date" style="width: 100%;">
+        </div>
+        <div style="flex: 1;">
+          <span style="font-size: 12px; color: #666; display:block; margin-bottom:2px;">Fin</span>
+          <input type="date" id="set-end-date" style="width: 100%;">
+          <p class="settings-note">Conseil : fin ~1 mois avant le concours.</p>
+        </div>
+      </div>
     </div>
 
-    <div class="settings-group">
-      <label>Date de fin des révisions</label>
-      <input type="date" id="set-end-date">
+    <div class="settings-group" style="margin-bottom: 12px; padding-bottom: 12px;">
+      <label style="margin-bottom: 4px;">⏱️ Rythme re-révisions</label>
+      <input type="text" id="set-offsets" placeholder="1, 3, 7, 14, 30..." style="padding: 6px;">
+      <p class="settings-note" style="margin-top:2px;">Sépare les jours par des virgules (ex: 1, 3, 10...).</p>
     </div>
 
-    <div class="settings-group">
-      <label>Intervalles de révision (Jours)</label>
-      <p class="settings-note">Sépare les jours par des virgules (ex: 1, 3, 7, 14, 30...).</p>
-      <input type="text" id="set-offsets" placeholder="1, 3, 7, 14, 30...">
+    <h4 style="font-size:14px; margin-top:10px; margin-bottom:8px; color:#2f7e5f;">🚫 Jours Bloqués & Vacances</h4>
+    
+    <div style="margin-bottom: 10px;">
+      <div style="display:flex; gap:8px; margin-bottom: 6px;">
+        <select id="select-blocked-day" style="padding:6px; border-radius:6px; flex:1; font-size:13px;">
+          <option value="">-- Jours Hebdo OFF --</option>
+          <option value="1">Lundi</option>
+          <option value="2">Mardi</option>
+          <option value="3">Mercredi</option>
+          <option value="4">Jeudi</option>
+          <option value="5">Vendredi</option>
+          <option value="6">Samedi</option>
+          <option value="0">Dimanche</option>
+        </select>
+        <button id="btn-add-blocked-day" class="nav-button" style="padding:4px 10px; font-size:12px;">Ajouter</button>
+      </div>
+      <div id="blocked-days-list" class="tags-container"></div>
     </div>
 
-    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-      <button id="btn-save-settings" class="submit-btn" style="background:#2f7e5f;">💾 Sauvegarder & Recalculer</button>
+    <div>
+      <div class="period-inputs" style="margin-bottom: 6px;">
+        <input type="date" id="vacation-start" style="padding:4px; font-size:13px;">
+        <span style="font-size:12px;">au</span>
+        <input type="date" id="vacation-end" style="padding:4px; font-size:13px;">
+        <button id="btn-add-vacation" class="nav-button" style="padding:4px 10px; font-size:12px;">Ajouter</button>
+      </div>
+      <div id="vacation-list" class="tags-container"></div>
+      <p class="settings-note">Le planning sautera automatiquement ces dates et seront sous le statut "reporté" (comme si tu avais cliqué sur "pas aujourd'hui").</p>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:10px; border-top:1px solid #eee;">
+      
+      <button id="btn-reset-settings" class="nav-button" style="background:transparent; color:#ef5350; border:1px solid #ef5350; font-size:12px; padding:6px 12px;">
+        🗑️ Réinitialiser
+      </button>
+
+      <button id="btn-save-settings" class="submit-btn" style="background:#2f7e5f; padding: 8px 20px;">
+        💾 Sauvegarder
+      </button>
+
     </div>
   </div>
 </div>

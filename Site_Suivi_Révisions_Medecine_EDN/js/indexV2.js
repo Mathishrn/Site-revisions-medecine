@@ -415,16 +415,42 @@ if (sortSelect) {
         const st = state.chapters[chap.id];
 
         if (checkbox.checked) {
-          const chosenDate = await askFirstLearningDate(st.learnedDate);
+          // 1. Demande la date d'apprentissage
+          const chosenDateStr = await askFirstLearningDate(st.learnedDate);
 
-          if (!chosenDate) {
+          if (!chosenDateStr) {
+            // Si l'utilisateur annule, on décoche
             checkbox.checked = !!st.completed;
             return;
           }
 
-          st.completed = true;
-          st.learnedDate = chosenDate;
+          // 2. LOGIQUE INTELLIGENTE : Vérification Date de Début
+          // On récupère les réglages actuels
+          const settings = getSettings(); 
+          const globalStart = settings.startDate; // ex: "2025-09-01"
+          
+          // Si la date choisie est AVANT la date officielle de début
+          if (chosenDateStr < globalStart) {
+            const confirmChange = confirm(
+              `⚠️ Cohérence des dates détectée.\n\n` +
+              `Tu as indiqué avoir appris ce chapitre le ${formatDateFr(chosenDateStr)}, ` +
+              `mais tes révisions commencent officiellement le ${formatDateFr(globalStart)}.\n\n` +
+              `Voulez-vous avancer la date de début des révisions au ${formatDateFr(chosenDateStr)} pour que tout colle ?`
+            );
 
+            if (confirmChange) {
+              settings.startDate = chosenDateStr;
+              saveSettings(settings); // Sauvegarde la nouvelle date
+              updateDeadlineBox(state); // Met à jour la barre de progression visuelle
+              showToast("Date de début de révisions mise à jour !");
+            }
+          }
+
+          // 3. Validation du chapitre
+          st.completed = true;
+          st.learnedDate = chosenDateStr;
+
+          // Génération des révisions (si pas déjà fait)
           if (!Array.isArray(st.reviews) || st.reviews.length === 0) {
             st.reviews = generateReviewSchedule(st.learnedDate);
           }
@@ -436,16 +462,13 @@ if (sortSelect) {
             applyFilters();
           }
 
-          showToast(
-            `Chapitre ${chap.id} validé, t'es une machine 🔥🔥`
-          );
+          showToast(`Chapitre ${chap.id} validé, t'es une machine ! 🔥🔥`);
+
         } else {
+          // Cas du décochage (inchangé mais inclus pour être complet)
           if (st.completed) {
             const confirmUncheck = window.confirm(
-              "Tu es sur le point de décocher ce chapitre.\n\n" +
-              "Cela va supprimer toutes les re-révisions générées automatiquement " +
-              "et effacer la date de 1ère apprentissage.\n\n" +
-              "Continuer ?"
+              "Attention : Décocher ce chapitre va effacer son historique de révisions.\nContinuer ?"
             );
             if (!confirmUncheck) {
               checkbox.checked = true;
@@ -465,6 +488,7 @@ if (sortSelect) {
           }
         }
 
+        // Mise à jour visuelle du sous-titre
         if (st.learnedDate) {
           subtitleSpan.textContent =
             (chap.description || "") +
@@ -674,25 +698,104 @@ btnSave.addEventListener("click", async () => { // Note l'ajout de "async" ici
     return newState;
   }
 
-  // --- GESTION DES PARAMÈTRES ---
+// --- GESTION DES PARAMÈTRES AVANCÉS ---
   const btnSettings = document.getElementById("btn-settings");
   const modalSettings = document.getElementById("settings-modal");
   const closeSettings = document.getElementById("settings-close");
   const backdropSettings = document.getElementById("settings-backdrop");
   const btnSaveSettings = document.getElementById("btn-save-settings");
   
+  // Champs Dates & Intervalles
   const inputStart = document.getElementById("set-start-date");
   const inputEnd = document.getElementById("set-end-date");
   const inputOffsets = document.getElementById("set-offsets");
 
+  // Nouveaux Champs : Jours Bloqués
+  const selectBlockedDay = document.getElementById("select-blocked-day");
+  const btnAddBlockedDay = document.getElementById("btn-add-blocked-day");
+  const listBlockedDays = document.getElementById("blocked-days-list");
+  
+  // Nouveaux Champs : Vacances
+  const inputVacStart = document.getElementById("vacation-start");
+  const inputVacEnd = document.getElementById("vacation-end");
+  const btnAddVacation = document.getElementById("btn-add-vacation");
+  const listVacations = document.getElementById("vacation-list");
+
+  // Variables temporaires pour stocker les choix avant sauvegarde
+  let tempBlockedWeekdays = [];
+  let tempVacations = [];
+
+  const WEEKDAY_NAMES = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+
+  // Fonction pour dessiner les tags (étiquettes bleues)
+  function renderTags() {
+    // 1. Tags Jours Bloqués
+    if(listBlockedDays) {
+      listBlockedDays.innerHTML = "";
+      tempBlockedWeekdays.forEach(dayIndex => {
+        const tag = document.createElement("div");
+        tag.className = "tag-item";
+        tag.innerHTML = `<span>🚫 ${WEEKDAY_NAMES[dayIndex]}</span>`;
+        
+        const removeBtn = document.createElement("span");
+        removeBtn.className = "tag-remove";
+        removeBtn.textContent = "✖";
+        
+        // MODIF ROBUSTE : addEventListener
+        removeBtn.addEventListener("click", () => {
+          tempBlockedWeekdays = tempBlockedWeekdays.filter(d => d !== dayIndex);
+          renderTags();
+        });
+        
+        tag.appendChild(removeBtn);
+        listBlockedDays.appendChild(tag);
+      });
+    }
+
+    // 2. Tags Vacances
+    if(listVacations) {
+      listVacations.innerHTML = "";
+      tempVacations.forEach((vac, idx) => {
+        const tag = document.createElement("div");
+        tag.className = "tag-item";
+        
+        // Formatage joli des dates
+        const d1 = new Date(vac.start);
+        const d2 = new Date(vac.end);
+        const fmt = { day: 'numeric', month: 'short' };
+        const label = `🏖️ ${d1.toLocaleDateString('fr-FR', fmt)} au ${d2.toLocaleDateString('fr-FR', fmt)}`;
+
+        tag.innerHTML = `<span>${label}</span>`;
+        
+        const removeBtn = document.createElement("span");
+        removeBtn.className = "tag-remove";
+        removeBtn.textContent = "✖";
+        
+        // MODIF ROBUSTE : addEventListener
+        removeBtn.addEventListener("click", () => {
+          tempVacations.splice(idx, 1);
+          renderTags();
+        });
+        
+        tag.appendChild(removeBtn);
+        listVacations.appendChild(tag);
+      });
+    }
+  }
+
   if (btnSettings && modalSettings) {
-    // Ouverture : on charge les valeurs actuelles
+    // OUVERTURE MODALE : On charge les données existantes
     btnSettings.addEventListener("click", () => {
       const s = getSettings();
       inputStart.value = s.startDate;
       inputEnd.value = s.endDate;
       inputOffsets.value = s.offsets;
       
+      // On clone les tableaux pour ne pas modifier directement sans sauvegarder
+      tempBlockedWeekdays = [...(s.blockedWeekdays || [])];
+      tempVacations = [...(s.vacations || [])];
+      
+      renderTags();
       modalSettings.classList.add("open");
     });
 
@@ -700,38 +803,130 @@ btnSave.addEventListener("click", async () => { // Note l'ajout de "async" ici
     closeSettings.addEventListener("click", closeSet);
     backdropSettings.addEventListener("click", closeSet);
 
-    // Sauvegarde & Recalcul
-    btnSaveSettings.addEventListener("click", () => {
-      const newSettings = {
-        startDate: inputStart.value,
-        endDate: inputEnd.value,
-        offsets: inputOffsets.value
-      };
+    // ACTION : Ajouter un Jour Bloqué
+    if(btnAddBlockedDay) {
+        btnAddBlockedDay.addEventListener("click", () => {
+        const val = parseInt(selectBlockedDay.value, 10);
+        if (isNaN(val)) return; // Rien sélectionné
+        
+        if (!tempBlockedWeekdays.includes(val)) {
+            tempBlockedWeekdays.push(val);
+            tempBlockedWeekdays.sort(); // Garder l'ordre Dimanche -> Samedi
+            renderTags();
+        }
+        });
+    }
 
-      if (!newSettings.startDate || !newSettings.endDate || !newSettings.offsets) {
-        alert("Veuillez remplir tous les champs.");
-        return;
+    // ACTION : Ajouter une Période de Vacances
+    if(btnAddVacation) {
+        btnAddVacation.addEventListener("click", () => {
+        const s = inputVacStart.value;
+        const e = inputVacEnd.value;
+        
+        if (!s || !e) return alert("Il faut une date de début et une date de fin.");
+        if (s > e) return alert("La date de début doit être avant la fin !");
+        
+        tempVacations.push({ start: s, end: e });
+        // On trie par date chronologique
+        tempVacations.sort((a,b) => a.start.localeCompare(b.start));
+        
+        // Reset des champs
+        inputVacStart.value = "";
+        inputVacEnd.value = "";
+        renderTags();
+        });
+    }
+
+    // --- AJOUT : BOUTON RÉINITIALISER (MODIFIÉ) ---
+    const btnResetSettings = document.getElementById("btn-reset-settings");
+    
+    if (btnResetSettings) {
+      // ICI LA MODIFICATION CLÉ : addEventListener au lieu de .onclick
+      btnResetSettings.addEventListener("click", () => {
+        const confirmReset = confirm(
+          "⚠️ Es-tu sûr de vouloir tout réinitialiser ?\n\n" +
+          "Cela va remettre les dates, le rythme et les jours bloqués aux valeurs par défaut.\n" +
+          "Ton planning sera recalculé (mais l'historique de ce qui est déjà fait sera conservé)."
+        );
+
+        if (confirmReset) {
+          // 1. On efface les réglages perso du stockage
+          localStorage.removeItem("suivi_med_settings_v1");
+          
+          // 2. On lance le recalcul (qui utilisera du coup les valeurs par défaut)
+          // La fonction recalculateAllSchedules est dans commonV2.js
+          recalculateAllSchedules();
+          
+          alert("Paramètres remis à zéro !");
+          window.location.reload(); // On recharge pour appliquer les changements
+        }
+      });
+    }
+
+    // ACTION : SAUVEGARDER
+    btnSaveSettings.addEventListener("click", () => {
+      const newStart = inputStart.value;
+      const newEnd = inputEnd.value;
+      const newOffsets = inputOffsets.value;
+
+      // SÉCURITÉ 1 : Champs vides
+      if (!newStart || !newEnd || !newOffsets) {
+        return alert("Tous les champs (dates et rythme) sont obligatoires.");
       }
+
+      // SÉCURITÉ 2 : Voyageur Temporel (Début > Fin)
+      if (newStart >= newEnd) {
+        return alert("⛔ Erreur de dates !\nLa date de début doit être strictement AVANT la date de fin.");
+      }
+
+      // SÉCURITÉ 3 : Burn-out (7 jours bloqués)
+      if (tempBlockedWeekdays.length >= 7) {
+        return alert("⛔ Impossible !\nTu ne peux pas bloquer les 7 jours de la semaine, sinon tu ne pourras jamais réviser 😅.");
+      }
+
+      // SÉCURITÉ 4 : Cohérence avec l'historique (Déjà présent mais important)
+      const currentMinLearned = getMinLearnedDate(state); // (Assure-toi que cette fonction est accessible ou définie dans le fichier)
+      if (currentMinLearned && newStart > currentMinLearned) {
+        return alert(`⛔ Impossible !\nTu as déjà validé un chapitre le ${formatDateFr(currentMinLearned)}.\nLa date de début ne peut pas être après.`);
+      }
+
+      // Si tout est bon, on sauvegarde
+      const newSettings = {
+        startDate: newStart,
+        endDate: newEnd,
+        offsets: newOffsets,
+        blockedWeekdays: tempBlockedWeekdays,
+        vacations: tempVacations
+      };
       
-      const confirmMsg = "⚠️ Attention !\n\nModifier les intervalles va déclencher un RECALCUL de toutes les futures révisions de tes chapitres déjà appris.\n\nLes révisions déjà effectuées ne bougeront pas.\nLes révisions futures seront recalées sur tes nouveaux intervalles.\n\nContinuer ?";
-      
-      if (confirm(confirmMsg)) {
+      if (confirm("⚠️ Sauvegarder et recalculer le planning ?\n(L'historique des révisions faites sera conservé.)")) {
         saveSettings(newSettings);
-        
-        // Fonction magique de commonV2.js
         const count = recalculateAllSchedules();
+        updateDeadlineBox(loadState());
+        if(typeof closeSet === 'function') closeSet(); // Ferme la modale
+        else if(modalSettings) modalSettings.classList.remove("open");
         
-        updateDeadlineBox(loadState()); // Mise à jour barre visuelle
-        closeSet();
-        alert(`Paramètres sauvegardés !\n${count} chapitres ont été mis à jour avec le nouveau planning.`);
-        
-        // On recharge la page pour tout rafraichir proprement
+        alert(`C'est tout bon ! ${count} chapitres mis à jour.`);
         window.location.reload();
       }
     });
   }
 
-  // --- GESTION MODAL INFO COOKIES ---
+  // Petite fonction utilitaire pour trouver la date la plus ancienne apprise
+  function getMinLearnedDate(currentState) {
+    let minDate = null;
+    CHAPITRES.forEach(ch => {
+      const st = currentState.chapters[ch.id];
+      if (st && st.completed && st.learnedDate) {
+        if (!minDate || st.learnedDate < minDate) {
+          minDate = st.learnedDate;
+        }
+      }
+    });
+    return minDate;
+  }
+
+  // --- GESTION MODAL INFO COOKIES (RESTAURATION) ---
   const btnInfo = document.getElementById("btn-info");
   const modalInfo = document.getElementById("info-modal");
   const closeInfo = document.getElementById("info-close");
@@ -739,41 +934,19 @@ btnSave.addEventListener("click", async () => { // Note l'ajout de "async" ici
   const btnInfoOk = document.getElementById("btn-info-ok");
 
   if (btnInfo && modalInfo) {
-    function openInfo() {
+    btnInfo.addEventListener("click", () => {
       modalInfo.classList.add("open");
       modalInfo.setAttribute("aria-hidden", "false");
-    }
+    });
     
     function closeInfoModal() {
       modalInfo.classList.remove("open");
       modalInfo.setAttribute("aria-hidden", "true");
     }
 
-    btnInfo.addEventListener("click", openInfo);
     if(closeInfo) closeInfo.addEventListener("click", closeInfoModal);
     if(backdropInfo) backdropInfo.addEventListener("click", closeInfoModal);
     if(btnInfoOk) btnInfoOk.addEventListener("click", closeInfoModal);
-  }
-
-  // --- GESTION CROIX RECHERCHE ---
-  const searchClearBtn = document.getElementById("search-clear");
-  
-  if (searchInput && searchClearBtn) {
-    // Afficher/Masquer la croix quand on tape
-    searchInput.addEventListener("input", (e) => {
-      currentSearchTerm = e.target.value;
-      searchClearBtn.style.display = currentSearchTerm ? "block" : "none";
-      applyFilters();
-    });
-
-    // Clic sur la croix
-    searchClearBtn.addEventListener("click", () => {
-      searchInput.value = "";
-      currentSearchTerm = "";
-      searchClearBtn.style.display = "none";
-      applyFilters();
-      searchInput.focus(); // Remet le curseur dans la case
-    });
   }
 
   construireListe();
